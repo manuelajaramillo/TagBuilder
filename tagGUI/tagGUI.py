@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from tkinter import font
 from tkinter.constants import OFF
 
-from tagModules.GTM import GTM
+#from tagModules.GTM import GTM
 from tagModules.urlExtractor import urlDomains as webDOM
 from tagModules.pixelBot import pixelBot
 from tagModules.handleFile import xlsxFile
@@ -20,7 +20,7 @@ from tagModules.handleFile import xlsxFile
 MENU_DEFINITION = (
             'File- &New/Ctrl+N/self.newFile, Save/Ctrl+S/self.save_file, SaveAs/Ctrl+Shift+S/self.save_as, sep, Exit/Ctrl+Q/self.exitCalcTag',
             'Edit- Setting/Ctrl+Z/self.setting, sep, Show Offline/Alt+F5/self.offline',
-            'View- SiteMap Builder//self.show_siteMapTab, Pixel Creator//self.show_PixelTab, GTM Integrator//self.show_GTMTab, CAPI Integrator//self.show_CAPITab',
+            'View- SiteMap Builder//self.show_siteMapTab, Pixel Creator//self.show_PixelTab, GTM Integrator//self.show_GTMTab',
             'Help- Documentation/F2/self.documentation, About/F1/self.aboutTagCalc'
         )
 
@@ -1096,7 +1096,7 @@ class tagFrontEnd(FrameWork2D):
         self.btn_loadTags.configure(state='disable')
         if self.validTRFile('Final'):
             self.addItemTreeViewII(self.getArrayPixels(), 2)
-            self.btn_gtmConnect.configure(state='active')
+            #self.btn_gtmConnect.configure(state='active')
             self.lanchPopUps('Extracted!', 'The pixels had read from TR!', 'Press "Ok" to exit.')
         else:
             self.lanchPopUps('Invalid File', 'You must choice a valid file!', 'Press "Ok" to exit.')
