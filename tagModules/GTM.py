@@ -23,6 +23,10 @@ CREDENTIALS = 'client_secrets.json'
 
 FOLDER_NAME = ''
 
+TRIGGERS_TYPE = [
+    'pageview', 'domReady', 'customEvent', 'scrollDepth', 'timer', 'click'
+]
+
 namingTools = Naming()
 class googleCloudServices:
     """This class generate the differents services and clients of the google services.
@@ -153,6 +157,7 @@ class GTM:
         """
         workspaceID = 'accounts/%s/containers/%s/workspaces/%s'%(accountID, containerID, workspaceID)
         tags = self.gtm_service.accounts().containers().workspaces().tags().list(parent=workspaceID).execute()
+        tags = {'tag': []} if tags == {} else tags
         return tags['tag']
     
     def getTrigger(self):
@@ -171,6 +176,7 @@ class GTM:
         """
         workspaceID = 'accounts/%s/containers/%s/workspaces/%s'%(accountID, containerID, workspaceID)
         triggers = self.gtm_service.accounts().containers().workspaces().triggers().list(parent=workspaceID).execute()
+        triggers = {'trigger': []} if triggers == {} else triggers
         return triggers['trigger']
     
     def getVariable(self):
@@ -189,6 +195,7 @@ class GTM:
         """
         workspaceID = 'accounts/%s/containers/%s/workspaces/%s'%(accountID, containerID, workspaceID)
         variables = self.gtm_service.accounts().containers().workspaces().variables().list(parent=workspaceID).execute()
+        variables = {'variable': []} if variables == {} else variables
         return variables['variable']
     
     def getFolder(self, path):
@@ -313,7 +320,7 @@ class GTM:
         if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
-        return self.gtm_service.accounts().containers().workspaces().folders().update(path=path, body=body)
+        return self.gtm_service.accounts().containers().workspaces().folders().update(path=path, body=body).execute()
     
     def existAccount(self, name):
         for account in self.accountList:
@@ -334,12 +341,116 @@ class GTM:
         elif element == 'Folder':
             print('Entramos a existElement')
             folders =  self.getAllFolders(parent)
-            print(folders)
             for folder in folders:
                 if name in folder['name']:
                     return True, folder
             else:
                 return False, {}
+            
+class TagTemple:
+    def __init__(self, name):
+        self.create = False
+        self.body   = {'name': name}
+        
+    def setType(self, type, parameters):
+        pass
+        
+    def setTrigger(self, name, type):
+        pass
+    
+    def setVariable(self, name, type):
+        pass
+    
+class TriggerTemple:
+    def __init__(self, name, triggerType):
+        self.create = False
+        self.temple = {'name': name, 'type': triggerType}
+        
+    def addFilter(self, filterType, condition, variable, value, keys=['arg0', 'arg1']):
+        variable = '{{'+variable+'}}'
+        filter_ = {'type': condition, 'parameter': [{'type': 'template', 'key': keys[0], 'value': variable}, {'type': 'template', 'key': keys[1], 'value': value}]}
+        if filterType == 'matchRegex':
+            filter_['parameter'].append({'type': 'boolean', 'key': 'ignore_case', 'value': 'true'})
+        try:
+            self.temple[filterType].append(filter_)
+        except KeyError:
+            self.temple[filterType] = [filter_]  
+            
+    def addParameter(self, nameParameter='eventName', typeParameter='template', valueParameter='gtm.timer'):
+        self.temple[nameParameter] = {'type': typeParameter, 'value': valueParameter}
+    
+    def addProperty(self):
+        pass
+    
+    def updateFilter(self):
+        pass
+    
+    def setFolder(self, parentFolderId):
+        self.temple['parentFolderId'] = parentFolderId 
+    
+class VariableTemple:
+    def __init__(self):
+        self.create = False
+   
+class CustomTemple(TagTemple):
+    def __init__(self, name, code):
+        super().__init__(name)
+class facebookTemple(TagTemple):
+    def __init__(self, name):
+        super().__init__(name)
+        
+class TwitterTemple(TagTemple):
+    def __init__(self, name):
+        super().__init__(name)
+        
+class PageviewTrigger(TriggerTemple):
+    def __init__(self, name, var_value='/', triggerType='pageview', pageType='AllPages'):
+        super().__init__(name, triggerType)
+        self.pageType = pageType
+        self._init_pageview(var_value)
+        
+    def _init_pageview(self, var_value):
+        if self.pageType == 'Section':
+            self.addFilter('filter', 'contains', 'Page Path', var_value)
+        elif self.pageType == 'Home':
+            self.addFilter('filter', 'endsWith', 'Page Hostname', var_value)
+        
+class TimerTrigger(TriggerTemple):
+    def __init__(self, name, time, var_value, scroll_depth = '50', triggerType='timer', timerType='basic'):
+        super().__init__(name, triggerType)
+        self.timerType = timerType
+        self._init_timer(time, var_value, scroll_depth)
+        
+    def _init_timer(self, time, var_value, scroll_depth):
+        self.addParameter()
+        self.addParameter('interval', 'template', time)
+        self.addParameter('limit', 'template', '1')
+        self.addFilter('autoEventFilter', 'endsWith', 'Page Hostname', var_value)
+        if self.timerType == 'timerScroll':
+            self.addFilter('filter', 'equals', 'Scroll Depth Threshold', scroll_depth)
+        elif self.timerType == 'other':
+            pass
+        
+class ScrollTrigger(TriggerTemple):
+    def __init__(self, name, scroll_depth, var_value = '/', triggerType='scrollDepth', scrollType='basic'):
+        super().__init__(name, triggerType)
+        self.scrollType = scrollType
+        self._init_scroll(name, scroll_depth, var_value)
+        
+    def _init_scroll(self, name, scroll_depth, var_value):
+        self.addParameter('parameter', 'boolean', 'verticalThresholdOn', 'true')
+        self.addParameter('parameter', 'boolean', 'horizontalThresholdOn', 'true')
+        self.addParameter('parameter', 'template', 'verticalThresholdUnits', 'PERCENT')
+        self.addParameter('parameter', 'template', 'verticalThresholdsPercent', '60')
+        self.addParameter('parameter', 'template', 'triggerStartOption', 'WINDOW_LOAD')
+        if self.scrollType == 'scrollPage': self.addFilter('filter', 'contains', 'Page Path', var_value)
+    
+    def addParameter(self, nameParameter, typeParameter, keyParameter, valueParameter):
+        parameter = {'type': typeParameter, 'key': keyParameter, 'value': valueParameter}
+        try:
+            self.temple[nameParameter].append(parameter)
+        except KeyError:
+            self.temple[nameParameter] = [parameter]
     
 if __name__ == '__main__':
     gtm = GTM()

@@ -208,6 +208,7 @@ class tagFrontEnd(FrameWork2D):
         self.advertiser    = tk.StringVar()
         self.advertiser_   = tk.StringVar()
         self.advertiserId  = tk.StringVar()
+        self.fixedPath     = tk.StringVar()
         self.searchXML     = tk.BooleanVar()
         self.show_         = tk.BooleanVar()
         self.seleniumDelay = tk.IntVar()
@@ -231,6 +232,7 @@ class tagFrontEnd(FrameWork2D):
         self.advertiser.set(self.xlsxFile.readCell('C13'))
         self.advertiser_.set('')
         self.advertiserId.set(self.xlsxFile.readCell('C14'))
+        self.fixedPath.set('/')
         self.maxCategory.set(15)
         self.webDOM.setMaxCategories(self.maxCategory.get())
         self.minSizeWord.set(3)
@@ -433,21 +435,27 @@ class tagFrontEnd(FrameWork2D):
         parameters_frame.grid(column = 0, row=0)
         
         if indexTab == 0:
-            ttk.Label(parameters_frame, text="URL Target:").grid(column=0, row=0, sticky=tk.W)
+            ttk.Label(parameters_frame, text="URL Target: ").grid(column=0, row=0, sticky=tk.W)
             tk.Entry(parameters_frame, width=30, textvariable = self.urlAdvertiser, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=1, row=0, sticky=tk.W)
-            ttk.Label(parameters_frame, text="Advertiser:").grid(column=2, row=0, sticky=tk.W)
+            ttk.Label(parameters_frame, text="Advertiser: ").grid(column=2, row=0, sticky=tk.W)
             tk.Entry(parameters_frame, textvariable = self.advertiser, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=3, row=0, sticky=tk.W)
-            ttk.Label(parameters_frame, text='Advertiser ID:').grid(column=4, row=0, sticky=tk.W)
+            ttk.Label(parameters_frame, text='Advertiser ID: ').grid(column=4, row=0, sticky=tk.W)
             tk.Entry(parameters_frame, textvariable=self.advertiserId, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=5, row=0, sticky=tk.W)
             
-            ttk.Label(parameters_frame, text="Container ID").grid(column=0, row=1, sticky=tk.W)
+            ttk.Label(parameters_frame, text="Container ID: ").grid(column=0, row=1, sticky=tk.W)
             tk.Entry(parameters_frame, width=30, textvariable = self.GTM_ID, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=1, row=1, sticky=tk.W)
-            ttk.Label(parameters_frame, text="Progress:").grid(column=2, row=1, sticky=tk.W)
+            ttk.Label(parameters_frame, text="Progress: ").grid(column=2, row=1, sticky=tk.W)
             self.progressbar = ttk.Progressbar(parameters_frame, variable=self.viewProgress, orient = tk.HORIZONTAL, length=125, maximum=100)
             self.progressbar.grid(column=3, row=1, sticky=tk.W)
-            ttk.Label(parameters_frame, text="Only HomePV:").grid(column=4, row=1, sticky=tk.W)
+            ttk.Label(parameters_frame, text="Only HomePV: ").grid(column=4, row=1, sticky=tk.W)
             ttk.Checkbutton(parameters_frame, command=self.set_search, variable=self.searchXML, onvalue=False, offvalue=True).grid(column=5, row=1)
             
+            ttk.Label(parameters_frame, text="Fixed Paths: ").grid(column=0, row=2, sticky=tk.W)
+            self.fixedPaths = ttk.Spinbox(parameters_frame, from_=0, to=3, command=self.set_fixedPaths, wrap=True, width=14, state='readonly')
+            self.fixedPaths.set(0)
+            self.fixedPaths.grid(column=1, row=2, sticky=tk.W)
+            ttk.Label(parameters_frame, text="Paths: ").grid(column=2, row=2, sticky=tk.W)
+            tk.Entry(parameters_frame, textvariable = self.fixedPath, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, state='readonly').grid(column=3, row=2, sticky=tk.W)
             # ttk.Label(parameters_frame, text="Max Categories:").grid(column=0, row=1, sticky=tk.W)
             # self.maxCategories = ttk.Scale(parameters_frame, from_=10, to=50, command=self.set_maxCategories, variable=self.maxCategory)
             # self.maxCategories.grid(column=1, row=2, sticky=tk.W)
@@ -1017,7 +1025,6 @@ class tagFrontEnd(FrameWork2D):
         thread = Thread(target=self.tags)
         thread.start()
     
-    
     def createTags_threaded(self):
         thread = Thread(target=self.createTags)
         thread.start()
@@ -1139,12 +1146,25 @@ class tagFrontEnd(FrameWork2D):
         self.btn_loadTags.configure(state='disable')
         self.btn_gtmConnect.configure(state='disable')
         self.btn_tagging.configure(state='disable')
+        tags, triggers, variables = [], [], []
         exist, folder = self.gtmService.existElement(self.workspace['path'], 'Strategy_GroupM_', 'Folder')
         if exist:
-            self.gtmService.updateFolder(folder['path'])
+            folder = self.gtmService.updateFolder(folder['path'])
         else:
-            self.gtmService.createFolder(self.workspace['path'])
-        time.sleep(5)
+            folder = self.gtmService.createFolder(self.workspace['path'])
+        tags = self.gtmService.getAllTags(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
+        triggers  = self.gtmService.getAllTriggers(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
+        variables = self.gtmService.getAllVariables(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
+        self.updateSnipetCodes()
+        for pixel in self.arrayPixels:
+            for tag in tags:
+                if tag['name'] == pixel[1]:
+                    print('This pixel, %s already exists! We need to update the temple'%pixel[1])
+                    #Process to update the pixel temple
+                    break
+            else:
+                print('This pixel, %s do not exist, we need to create it!'%pixel[1])
+                
         self.btn_loadTags.configure(state='active')
         self.btn_gtmConnect.configure(state='active')
         self.btn_tagging.configure(state='active')
@@ -1165,10 +1185,28 @@ class tagFrontEnd(FrameWork2D):
         self.webDOM.setMaxLandings(self.maxLandings.get())
         
     def set_landingsBy(self, event=None):
-        print(type(self.landingsBy.get()))
-        print(self.landingsBy.get())
         self.webDOM.setLandingsBy(int(self.landingsBy.get()))
-        print(type(self.webDOM.landingsBy))
+        
+    def set_fixedPaths(self, event=None):
+        if int(self.fixedPaths.get())>0:
+            paths = urlparse(self.urlAdvertiser.get()).path.replace('.html','').replace('.php','').split('/')
+            self.webDOM.deleteItemList(paths, '')
+            if len(paths)>0:
+                if int(self.fixedPaths.get())>len(paths):
+                    self.fixedPath.set(urlparse(self.urlAdvertiser.get()).path)
+                    self.fixedPaths.set(len(paths))
+                else:
+                    path = ''
+                    for i in range(int(self.fixedPaths.get())):
+                        path += '/' + paths[i]
+                    else:
+                        self.fixedPath.set(path)
+            else:
+                #self.lanchPopUps('Path Error', "The homepage doesn't have paths", 'Press "Ok" to exit.')
+                self.fixedPath.set('/')
+                self.fixedPaths.set(0)
+        else:
+            self.fixedPath.set('/')
 
     def deleteBranch(self, event):
         for item_ in self.dataTable.selection():
@@ -1216,14 +1254,16 @@ class tagFrontEnd(FrameWork2D):
             self.deleteItemsTreeView()
             existContainer, containerID = self.pixelBot.existGTM(self.urlAdvertiser.get())
             self.GTM_ID.set(containerID)
-            exists_url, exists_sitemap = self.webDOM.buildSiteMap(self.urlAdvertiser.get())
+            #agregar argumento para el path fijo a tener en cuenta
+            fixedPath = self.fixedPath.get() if int(self.fixedPaths.get())>0 else None
+            exists_url, exists_sitemap = self.webDOM.buildSiteMap(self.urlAdvertiser.get(), fixedPath)
             if exists_url:
                 if exists_sitemap and len(self.webDOM.subDomains)>0:
                     self.lanchPopUps('Landings', 'The process of find landings has finished!', 'Press "Ok" to exit.')
                 else:
-                    self.webDOM.findAnchors()
+                    self.webDOM.findAnchors(fixedPath)
                     self.webDOM.getSubDomains()
-                    self.webDOM.deeperSubDomains()
+                    self.webDOM.deeperSubDomains(fixedPath)
                     exist_sitemap = True if len(self.webDOM.subDomains)>0 else False 
                     if exist_sitemap:
                         self.lanchPopUps('Landings', 'The process of find landings has finished!', 'Press "Ok" to exit.')
@@ -1760,6 +1800,9 @@ class tagFrontEnd(FrameWork2D):
             print('Se ha finalizado este hilo de seguimiento')
             time.sleep(10)
             self.viewProgress.set(0)
+    
+    def updateSnipetCodes(self):
+        pass
         
     def lanchPopUps(self, title_, message_, detail_):
         messagebox.showinfo(
