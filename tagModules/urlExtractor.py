@@ -37,6 +37,7 @@ class urlDomains:
         self.mainSections  = []
         self.arraySections = []
         self.urlsets       = []
+        self.fixedPaths    = ''
         self.searchXML     = True
         self.maxLandings   = 50
         self.sizeWord      = 3
@@ -84,6 +85,9 @@ class urlDomains:
     def setStop(self, stop):
         self.stop = stop
         
+    def setFixedPaths(self, fixedPath):
+        self.fixedPaths = fixedPath if fixedPath != '/' else ''
+        
     def getUrlTarget(self):
         return self.url_target
 
@@ -98,7 +102,7 @@ class urlDomains:
         
     def setHeadlessMode(self):
         fireFoxOptions = webdriver.FirefoxOptions()
-        fireFoxOptions.headless = True
+        #fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())
@@ -250,7 +254,7 @@ class urlDomains:
                     self.loadPage()
                     self.findTagAttributes(tag)
     
-    def buildSiteMap(self, url):
+    def buildSiteMap(self, url, fixed_path=None):
         self.deleteSubDomain('All')
         exist_url     = False
         exist_sitemap = False
@@ -283,14 +287,18 @@ class urlDomains:
                             self.findTagAttributes('a')
                             exist_sitemap = True if len(self.subDomains)>0 else False
                             break   
-            self.viewProgress = 20              
+            self.viewProgress = 20 
+            if fixed_path != None and len(self.subDomains) > 0:
+                for i in range(len(self.subDomains)-1, -1,-1):
+                    if fixed_path not in str(self.subDomains[i].geturl()):
+                        self.subDomains.pop(i)            
             self.setDriver(url, True if self.driver == None else False)
             self.viewProgress = 30
-            self.findAnchors()
+            self.findAnchors(fixed_path)
             self.viewProgress = 40
             self.getSubDomains()
             self.viewProgress = 50
-            self.deeperSubDomains()
+            self.deeperSubDomains(fixed_path)
             self.viewProgress = 99
             exist_sitemap = True if len(self.subDomains)>0 else False
             print('Hemos terminado la validación')
@@ -308,7 +316,7 @@ class urlDomains:
         
     # This fuction find all urls in a webpage, scraping all anchor elements in the webpage
     # This function stores urls that owns or not to the main domain as urlparse type
-    def findAnchors(self):
+    def findAnchors(self, fixed_path=None):
         flat = 0
         try:
             self.anchors = self.driver.find_elements(By.TAG_NAME, 'a')
@@ -327,7 +335,11 @@ class urlDomains:
             except:
                 self.allDomains = []
                 self.loadPage()
-                self.findAnchors()      
+                self.findAnchors()  
+        if fixed_path != None:
+            for i in range(len(self.allDomains)-1,-1,-1):
+                if fixed_path not in str(self.allDomains[i].geturl()):
+                    self.allDomains.pop(i)   
     
     # This function sort of all urls founded in the webpage in two categories:
     # SubDomains: domains that own to the main domain given
@@ -348,19 +360,19 @@ class urlDomains:
         urls.sort()
         return urls
                     
-    def deeperSubDomains(self):
+    def deeperSubDomains(self, fixed_path=None):
         if len(self.subDomains) > 0:
             while len(self.subDomains)<self.maxLandings and self.__indexSearch<len(self.subDomains) and self.subDomains[self.__indexSearch].netloc == urlparse(self.url_target).netloc and not self.stop:
                 try:
                     self.loadPage(self.subDomains[self.__indexSearch].geturl())
-                    self.findAnchors()
+                    self.findAnchors(fixed_path)
                     self.getSubDomains()
                     self.__indexSearch += 1
                 except StaleElementReferenceException as e:
                     print('Ha ocurrido un error')
                     try:
                         self.driver.refresh()
-                        self.findAnchors()
+                        self.findAnchors(fixed_path)
                         self.getSubDomains()
                         self.__indexSearch += 1
                     except StaleElementReferenceException as e:
@@ -376,6 +388,10 @@ class urlDomains:
         for subDomain in self.subDomains:
             paths.append(subDomain.path)
         paths.sort()
+        if self.fixedPaths != '':
+            for index, path in zip(range(len(paths)), paths):
+                paths[index] = path.replace(self.fixedPaths, '')
+        print(paths)
         return paths
     
     # Function to delete a item from a list_ by value

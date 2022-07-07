@@ -157,7 +157,7 @@ class pixelBot:
                 pass
             elif typeSearch == 'CLASS':
                 pass
-        return -1, None
+        return -1, NonegetWebElement
         
     
     """ Function that wait certain amount of time while the webelement is enabled.
