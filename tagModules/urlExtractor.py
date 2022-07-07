@@ -37,6 +37,7 @@ class urlDomains:
         self.mainSections  = []
         self.arraySections = []
         self.urlsets       = []
+        self.fixedPaths    = ''
         self.searchXML     = True
         self.maxLandings   = 50
         self.sizeWord      = 3
@@ -83,6 +84,9 @@ class urlDomains:
 
     def setStop(self, stop):
         self.stop = stop
+        
+    def setFixedPaths(self, fixedPath):
+        self.fixedPaths = fixedPath if fixedPath != '/' else ''
         
     def getUrlTarget(self):
         return self.url_target
@@ -384,6 +388,10 @@ class urlDomains:
         for subDomain in self.subDomains:
             paths.append(subDomain.path)
         paths.sort()
+        if self.fixedPaths != '':
+            for index, path in zip(range(len(paths)), paths):
+                paths[index] = path.replace(self.fixedPaths, '')
+        print(paths)
         return paths
     
     # Function to delete a item from a list_ by value

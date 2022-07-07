@@ -1193,7 +1193,7 @@ class tagFrontEnd(FrameWork2D):
             self.webDOM.deleteItemList(paths, '')
             if len(paths)>0:
                 if int(self.fixedPaths.get())>len(paths):
-                    self.fixedPath.set(urlparse(self.urlAdvertiser.get()).path)
+                    self.fixedPath.set(urlparse(self.urlAdvertiser.get()).path.replace('.html','').replace('.php',''))
                     self.fixedPaths.set(len(paths))
                 else:
                     path = ''
@@ -1207,6 +1207,8 @@ class tagFrontEnd(FrameWork2D):
                 self.fixedPaths.set(0)
         else:
             self.fixedPath.set('/')
+        self.webDOM.setFixedPaths(self.fixedPath.get())
+        self.deleteItemsTreeView()
 
     def deleteBranch(self, event):
         for item_ in self.dataTable.selection():
