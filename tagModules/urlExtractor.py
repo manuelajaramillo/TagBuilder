@@ -1,3 +1,4 @@
+from requests.exceptions import SSLError
 from urllib.parse import urlparse
 import requests
 import time
@@ -55,6 +56,11 @@ class urlDomains:
     def validURL(self, url):
         try:
             if requests.get(url, headers = HEADERS).status_code == 200:
+                return True
+            else:
+                return False
+        except SSLError:
+            if requests.get(url, headers = HEADERS, verify = False).status_code == 200:
                 return True
             else:
                 return False

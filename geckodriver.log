@@ -1,0 +1,106 @@
+1657633096771	geckodriver	INFO	Listening on 127.0.0.1:60400
+1657633099826	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--remote-debugging-port" "60401" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofilehIU3BN"
+1657633100591	Marionette	INFO	Marionette enabled
+1657633100600	Marionette	INFO	Listening on port 60410
+WebDriver BiDi listening on ws://localhost:60401
+Read port: 60410
+1657633100932	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofilehIU3BN\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://localhost:60401/devtools/browser/3732303a-f9f3-4adf-8932-11b62ea261bb
+1657633162747	Marionette	INFO	Stopped listening on port 60410
+1657633293873	geckodriver	INFO	Listening on 127.0.0.1:60480
+1657633296902	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--remote-debugging-port" "60481" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofileLtAWlq"
+1657633297449	Marionette	INFO	Marionette enabled
+1657633297457	Marionette	INFO	Listening on port 60490
+WebDriver BiDi listening on ws://localhost:60481
+Read port: 60490
+1657633297741	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofileLtAWlq\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://localhost:60481/devtools/browser/24896b8f-a7fa-448a-b451-a0cf65391af5
+1657633433267	Marionette	INFO	Stopped listening on port 60490
+1657890015688	geckodriver	INFO	Listening on 127.0.0.1:58615
+1657890018468	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--remote-debugging-port" "58616" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofilezsY9dN"
+1657890019205	Marionette	INFO	Marionette enabled
+1657890019214	Marionette	INFO	Listening on port 58625
+WebDriver BiDi listening on ws://localhost:58616
+Read port: 58625
+1657890019497	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofilezsY9dN\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://localhost:58616/devtools/browser/2b2065ea-2564-4d82-9fc9-f3678275fde6
+JavaScript warning: https://www.pupr.edu/, line 1726: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/, line 1729: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/politecnica.js?ver=1.0, line 380: TypeError: $j(...).fancybox is not a function
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/, line 1726: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/, line 1729: unreachable code after return statement
+1657890369421	Marionette	INFO	Stopped listening on port 58625
+1657890431986	geckodriver	INFO	Listening on 127.0.0.1:58756
+1657890435022	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--remote-debugging-port" "58757" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofilea5yRaD"
+1657890435519	Marionette	INFO	Marionette enabled
+1657890435527	Marionette	INFO	Listening on port 58766
+WebDriver BiDi listening on ws://localhost:58757
+Read port: 58766
+1657890435772	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofilea5yRaD\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://localhost:58757/devtools/browser/927a5d32-de35-434e-8433-0f1cb3067ae0
+JavaScript warning: https://www.pupr.edu/, line 1726: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/, line 1729: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/politecnica.js?ver=1.0, line 380: TypeError: $j(...).fancybox is not a function
+1657890653406	Marionette	INFO	Stopped listening on port 58766
+1657896424990	geckodriver	INFO	Listening on 127.0.0.1:60041
+1657896428035	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "--remote-debugging-port" "60042" "--remote-allow-hosts" "localhost" "-no-remote" "-profile" "C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofileflT8dO"
+1657896428592	Marionette	INFO	Marionette enabled
+1657896428600	Marionette	INFO	Listening on port 60051
+WebDriver BiDi listening on ws://localhost:60042
+Read port: 60051
+1657896428874	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofileflT8dO\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://localhost:60042/devtools/browser/d31f4750-8725-465a-ba48-cfc103a3e10e
+JavaScript warning: https://www.pupr.edu/, line 1726: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/, line 1729: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/politecnica.js?ver=1.0, line 380: TypeError: $j(...).fancybox is not a function
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/, line 1414: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/, line 1417: unreachable code after return statement
+1657897161672	Marionette	INFO	Stopped listening on port 60051
+ing on port 60142
+WebDriver BiDi listening on ws://localhost:60131
+Read port: 60142
+1657896453351	RemoteAgent	WARN	TLS certificate errors will be ignored for this session
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new NotFoundError("Could not open the file at C:\\Users\\Ryoma\\AppData\\Local\\Temp\\rust_mozprofiletb1mQr\\search.json.mozlz4", (void 0)))
+DevTools listening on ws://localhost:60131/devtools/browser/1c1b7fe2-bb01-4b6f-9397-594d1d89d703
+JavaScript warning: https://www.pupr.edu/, line 1726: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/, line 1729: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/politecnica.js?ver=1.0, line 380: TypeError: $j(...).fancybox is not a function
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/, line 1414: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/, line 1417: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/, line 1414: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/, line 1417: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/acerca-de/, line 1302: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/acerca-de/, line 1305: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/library/databases/, line 1053: ReferenceError: jQuery is not defined
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/ask-the-librarian/, line 1081: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/ask-the-librarian/, line 1084: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/interlibrary-loans/, line 1427: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/interlibrary-loans/, line 1430: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/servicios/, line 1498: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/servicios/, line 1501: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/library-meeting-rooms/, line 1217: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/library-meeting-rooms/, line 1220: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/contacts/, line 1686: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/contacts/, line 1689: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/acerca-de/#tab1, line 1302: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/acerca-de/#tab1, line 1305: unreachable code after return statement
+JavaScript error: https://www.pupr.edu/wp-content/themes/politecnica/js/number-changer.js?ver=1.0, line 1: ReferenceError: vs_account_id is not defined
+JavaScript warning: https://www.pupr.edu/library/servicios/#tab1, line 1498: unreachable code after return statement
+JavaScript warning: https://www.pupr.edu/library/servicios/#tab1, line 1501: unreachable code after return statement
+1657897158532	Marionette	INFO	Stopped listening on port 60142

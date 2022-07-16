@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from tkinter import font
 from tkinter.constants import OFF
 
-from tagModules.GTM import GTM
+from tagModules.GTM import AudienceTag, CustomTemple, GTM, PageviewTrigger, ScrollTrigger, TimerTrigger
 from tagModules.urlExtractor import urlDomains as webDOM
 from tagModules.pixelBot import pixelBot
 from tagModules.handleFile import xlsxFile
@@ -200,6 +200,7 @@ class tagFrontEnd(FrameWork2D):
         self.minsights     = []
         self.taboolaSeg    = []
         self.taboolaConv   = []
+        self.gtmTags       = []
         self.typeContainer = tk.StringVar()
         self.pathTR        = tk.StringVar()  
         self.directoryTR   = tk.StringVar()
@@ -1143,6 +1144,7 @@ class tagFrontEnd(FrameWork2D):
         self.btn_tagging.configure(state='active')    
         
     def createTags(self):
+        self.gtmTags = []
         self.btn_loadTags.configure(state='disable')
         self.btn_gtmConnect.configure(state='disable')
         self.btn_tagging.configure(state='disable')
@@ -1156,18 +1158,173 @@ class tagFrontEnd(FrameWork2D):
         triggers  = self.gtmService.getAllTriggers(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
         variables = self.gtmService.getAllVariables(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
         self.updateSnipetCodes()
+        # for pixel in self.arrayPixels:
+        #     print('*'*30)
+        #     print(pixel)
+        #     print('*'*30)
         for pixel in self.arrayPixels:
-            for tag in tags:
-                if tag['name'] == pixel[1]:
+            snippet = ''
+            for code in pixel[5:]:
+                if code != None and code.casefold() not in ['si', 'no', '', None, 'url', 'event']:
+                    snippet += code
+            if snippet == '': continue
+            if pixel[0] == 'General':
+                print('Awareness and Branding Pixel')
+                advertiser, trigger, date = pixel[1].split('_')
+                if re.findall(r'PV$', trigger):
+                    if re.findall(r'^HomeUTM', trigger):
+                        pass
+                    elif re.findall(r'^Home', trigger):
+                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                        self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Home'))
+                        if not self.existTag(tags, pixel[1]):
+                            self.gtmTags[-1].setState()
+                        else:
+                            tagId = self.getTagId(tags, pixel[1])
+                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                        if not self.existTrigger(triggers, pixel[1]): 
+                            self.gtmTags[-1].trigger.setState()
+                        else:
+                            triggerId = self.getTriggerId(triggers, pixel[1])
+                            if triggerId != '': 
+                                self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                elif re.findall(r'Scroll\d{1,2}_$', trigger):
+                    if re.findall(r'^AllPages', trigger):
+                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                        depth = re.findall(r'\d{1,2}', trigger)[0]
+                        self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], depth))
+                        if not self.existTag(tags, pixel[1]):
+                            self.gtmTags[-1].setState()
+                        else:
+                            tagId = self.getTagId(tags, pixel[1])
+                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                        if not self.existTrigger(triggers, pixel[1]): 
+                            self.gtmTags[-1].trigger.setState()
+                        else:
+                            triggerId = self.getTriggerId(triggers, pixel[1])
+                            if triggerId != '': 
+                                self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                elif re.findall(r'T\d+ss$', trigger):
+                    if re.findall(r'^AllPages', trigger):
+                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                        time = re.findall(r'\d+', trigger)[0]
+                        self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], time))
+                        if not self.existTag(tags, pixel[1]):
+                            self.gtmTags[-1].setState()
+                        else:
+                            tagId = self.getTagId(tags, pixel[1])
+                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                        if not self.existTrigger(triggers, pixel[1]): 
+                            self.gtmTags[-1].trigger.setState()
+                        else:
+                            triggerId = self.getTriggerId(triggers, pixel[1])
+                            if triggerId != '': 
+                                self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                else:
+                    continue
+            elif pixel[0] == 'Funnel':
+                print('Awareness and Branding Pixel')
+                if self.existTag(tags, pixel[1]): 
                     print('This pixel, %s already exists! We need to update the temple'%pixel[1])
-                    #Process to update the pixel temple
-                    break
+                else:
+                    print('This pixel, %s do not exist, we need to create it!'%pixel[1])
             else:
-                print('This pixel, %s do not exist, we need to create it!'%pixel[1])
-                
+                self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
+                self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                if not self.existTag(tags, pixel[1]): 
+                    self.gtmTags[-1].setState()
+                else:
+                    tagId = self.getTagId(tags, pixel[1])
+                    if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                if not self.existTrigger(triggers, pixel[1]): 
+                    self.gtmTags[-1].trigger.setState()
+                else:
+                    triggerId = self.getTriggerId(triggers, pixel[1])
+                    if triggerId != '': 
+                        self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                        self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+        for tag in self.gtmTags:
+            print('*'*30)
+            print('Los parámetros del tag son: ')
+            print(tag.temple)
+            print(tag.create)
+            print('*'*30)
+            print('Los parámetros del trigger asociado son: ')
+            print(tag.trigger.temple) 
+            print(tag.trigger.create)   
+        #We need to create a folder, then asociate the ID with de tags
+        #We need to create the trigger and asociate the ID with the tag
+        #We need to create the tag    
         self.btn_loadTags.configure(state='active')
         self.btn_gtmConnect.configure(state='active')
         self.btn_tagging.configure(state='active')
+        
+    def existTag(self, tags, tagName):
+        date = self.getDateFromName(tagName)
+        for tag in tags:
+            if tag['name'] == tagName: 
+                return True
+            else:
+                    if tagName.replace(date, '') in tag['name']:
+                        return True
+        else:
+            return False
+        
+    def existTrigger(self, triggers, triggerName):
+        date = self.getDateFromName(triggerName)
+        for trigger in triggers:
+            if trigger['name'] == triggerName: 
+                return True
+            else:
+                    if triggerName.replace(date, '') in trigger['name']:
+                        return True
+        else:
+            return False
+        
+    def getDateFromName(self, name):
+        try:
+            date = re.findall(r'_Jan\d{4}|_Feb\d{4}|_Mar\d{4}|_Apr\d{4}|_May\d{4}|_\d{4}|_Jun\d{4}|_Jul\d{4}|_Aug\d{4}|_Sep\d{4}|_Oct\d{4}|_Nov\d{4}|_Dec\d{4}', name)[0]
+        except:
+            date = ''
+        return date
+              
+    def getTriggerId(self, triggers, triggerName):
+        date = self.getDateFromName(triggerName)
+        for trigger in triggers:
+            if trigger['name'] == triggerName: 
+                return trigger['triggerId']
+            else:
+                    if triggerName.replace(date, '') in trigger['name']:
+                        return trigger['triggerId']
+        else:
+            return ''
+        
+    def getTagId(self, tags, tagName):
+        date = self.getDateFromName(tagName)
+        for tag in tags:
+            if tag['name'] == tagName: 
+                return tag['tagId']
+            else:
+                    if tagName.replace(date, '') in tag['name']:
+                        return tag['tagId']
+        else:
+            return ''
+          
+    def getTypeTrigger(self, nameTrigger):
+        advertiser, trigger, date = nameTrigger.split('_')
+        if re.findall(r'PV$', trigger):
+            return 'PV'
+        elif re.findall(r'Scroll\d{1,2}_$', trigger):
+            return re.findall(r'Scroll\d{1,2}_$', trigger)[0]
+        elif re.findall(r'T\d+ss$', trigger):
+            return re.findall(r'T\d+ss$', trigger)[0]
+        return ''
         
     def set_search(self):
         self.webDOM.setSearchXML(self.searchXML.get())
@@ -1804,7 +1961,15 @@ class tagFrontEnd(FrameWork2D):
             self.viewProgress.set(0)
     
     def updateSnipetCodes(self):
-        pass
+        for pixel in self.arrayPixels:
+            variables = pixel[3].split('/')
+            for variable in variables:
+                varDV = '[%s]'%variable
+                varMS = '[REPLACE THIS WITH YOUR MACRO AND PASS IN %s]'%variable
+                for code, index in zip(pixel[5:], range(5,len(pixel))):
+                    if code != None:
+                        code_ = code.replace(varDV, '{{%s}}'%variable).replace(varMS, '{{%s}}'%variable) 
+                        self.arrayPixels[self.arrayPixels.index(pixel)][index] = code_   
         
     def lanchPopUps(self, title_, message_, detail_):
         messagebox.showinfo(
