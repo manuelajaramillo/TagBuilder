@@ -219,6 +219,7 @@ class GTM:
             Folders: Dictionary list with all folders in a specific worspace.
         """
         folders = self.gtm_service.accounts().containers().workspaces().folders().list(parent=parent).execute()
+        folders = {'folder': []} if folders == {} else folders
         return folders['folder']
     
     def getTemplate(self):
@@ -320,7 +321,26 @@ class GTM:
         if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
-        return self.gtm_service.accounts().containers().workspaces().folders().update(path=path, body=body).execute()
+        try:
+            return self.gtm_service.accounts().containers().workspaces().folders().update(path=path, body=body).execute()
+        except:
+            return {}
+    
+    def updateTag(self, path, body):
+        try:
+            return self.gtm_service.accounts().containers().workspaces().tags().update(path=path, body=body).execute()
+        except:
+            return {}
+    
+    def updateTrigger(self, path, body):
+        return self.gtm_service.accounts().containers().workspaces().triggers().update(path=path, body=body).execute()
+        # try:
+        #     return self.gtm_service.accounts().containers().workspaces().triggers().update(path=path, body=body).execute()
+        # except:
+        #     return {}
+    
+    def updateVariable(self):
+        pass
     
     def existAccount(self, name):
         for account in self.accountList:
@@ -349,22 +369,38 @@ class GTM:
             
 class TagTemple:
     def __init__(self, name):
-        self.create = False
-        self.body   = {'name': name}
+        self.create  = False
+        self.temple  = {'name': name}
+        
+    def setState(self, state=True):
+        self.create = state
         
     def setType(self, type, parameters):
         pass
         
-    def setTrigger(self, name, type):
-        pass
+    def setTrigger(self, trigger):
+        self.trigger = trigger
     
     def setVariable(self, name, type):
         pass
+    
+    def setProperty(self, name, value):
+        self.temple[name] = value
+    
+    def setParameter(self, nameParameter, typeParameter, keyParameter, valueParameter):
+        parameter = {'type': typeParameter, 'key': keyParameter, 'value': valueParameter}
+        try:
+            self.temple[nameParameter].append(parameter)
+        except KeyError:
+            self.temple[nameParameter] = [parameter]
     
 class TriggerTemple:
     def __init__(self, name, triggerType):
         self.create = False
         self.temple = {'name': name, 'type': triggerType}
+        
+    def setState(self, state=True):
+        self.create = state
         
     def addFilter(self, filterType, condition, variable, value, keys=['arg0', 'arg1']):
         variable = '{{'+variable+'}}'
@@ -379,8 +415,8 @@ class TriggerTemple:
     def addParameter(self, nameParameter='eventName', typeParameter='template', valueParameter='gtm.timer'):
         self.temple[nameParameter] = {'type': typeParameter, 'value': valueParameter}
     
-    def addProperty(self):
-        pass
+    def setProperty(self, name, value):
+        self.temple[name] = value
     
     def updateFilter(self):
         pass
@@ -395,6 +431,17 @@ class VariableTemple:
 class CustomTemple(TagTemple):
     def __init__(self, name, code):
         super().__init__(name)
+        self._init_parameters(code)
+        
+    def _init_parameters(self, codeJS):
+        self.setProperty('type', 'html')
+        self.setParameter('parameter', 'template', 'html', codeJS)
+        
+class AudienceTag(CustomTemple):
+    def __init__(self, name, code, pathAudience):
+        super().__init__(name, code)
+        self.trigger = PageviewTrigger(name, pathAudience, pageType='Section')
+        
 class facebookTemple(TagTemple):
     def __init__(self, name):
         super().__init__(name)
@@ -413,7 +460,7 @@ class PageviewTrigger(TriggerTemple):
         if self.pageType == 'Section':
             self.addFilter('filter', 'contains', 'Page Path', var_value)
         elif self.pageType == 'Home':
-            self.addFilter('filter', 'endsWith', 'Page Hostname', var_value)
+            self.addFilter('filter', 'equals', 'Page URL', var_value)
         
 class TimerTrigger(TriggerTemple):
     def __init__(self, name, time, var_value, scroll_depth = '50', triggerType='timer', timerType='basic'):
@@ -441,7 +488,7 @@ class ScrollTrigger(TriggerTemple):
         self.addParameter('parameter', 'boolean', 'verticalThresholdOn', 'true')
         self.addParameter('parameter', 'boolean', 'horizontalThresholdOn', 'true')
         self.addParameter('parameter', 'template', 'verticalThresholdUnits', 'PERCENT')
-        self.addParameter('parameter', 'template', 'verticalThresholdsPercent', '60')
+        self.addParameter('parameter', 'template', 'verticalThresholdsPercent', scroll_depth)
         self.addParameter('parameter', 'template', 'triggerStartOption', 'WINDOW_LOAD')
         if self.scrollType == 'scrollPage': self.addFilter('filter', 'contains', 'Page Path', var_value)
     
