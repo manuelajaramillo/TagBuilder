@@ -1178,6 +1178,7 @@ class tagFrontEnd(FrameWork2D):
                         self.gtmTags.append(CustomTemple(pixel[1], snippet))
                         self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
                         self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Home'))
+                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
                         if not self.existTag(tags, pixel[1]):
                             self.gtmTags[-1].setState()
                         else:
@@ -1196,6 +1197,7 @@ class tagFrontEnd(FrameWork2D):
                         self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
                         depth = re.findall(r'\d{1,2}', trigger)[0]
                         self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], depth))
+                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
                         if not self.existTag(tags, pixel[1]):
                             self.gtmTags[-1].setState()
                         else:
@@ -1212,8 +1214,9 @@ class tagFrontEnd(FrameWork2D):
                     if re.findall(r'^AllPages', trigger):
                         self.gtmTags.append(CustomTemple(pixel[1], snippet))
                         self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                        time = re.findall(r'\d+', trigger)[0]
-                        self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], time))
+                        time_ = re.findall(r'\d+', trigger)[0]
+                        self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], time_))
+                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
                         if not self.existTag(tags, pixel[1]):
                             self.gtmTags[-1].setState()
                         else:
@@ -1237,6 +1240,7 @@ class tagFrontEnd(FrameWork2D):
             else:
                 self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
                 self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
                 if not self.existTag(tags, pixel[1]): 
                     self.gtmTags[-1].setState()
                 else:
@@ -1249,15 +1253,21 @@ class tagFrontEnd(FrameWork2D):
                     if triggerId != '': 
                         self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
                         self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
-        for tag in self.gtmTags:
-            print('*'*30)
-            print('Los parámetros del tag son: ')
-            print(tag.temple)
-            print(tag.create)
-            print('*'*30)
-            print('Los parámetros del trigger asociado son: ')
-            print(tag.trigger.temple) 
-            print(tag.trigger.create)   
+        for tag, index in zip(self.gtmTags,range(len(self.gtmTags))):
+            print(tag.trigger.create)
+            if tag.trigger.create:
+                trg = self.gtmService.createTrigger(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.trigger.temple)
+                self.gtmTags[index].setProperty('firingTriggerId', [trg['triggerId']])
+                print('Trigger Nuevo: ', trg)
+            else:
+                self.gtmService.updateTrigger(self.workspace['path']+'/triggers/%s'%tag.trigger.temple['triggerId'], tag.trigger.temple)
+            if tag.create:
+                print('Tag Nuevo: ', tag.temple)
+                self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.temple)
+            else:
+                print('Tag Existente: ', tag.temple) 
+                self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%tag.temple['tagId'], tag.temple)
+            time.sleep(10)
         #We need to create a folder, then asociate the ID with de tags
         #We need to create the trigger and asociate the ID with the tag
         #We need to create the tag    

@@ -321,7 +321,26 @@ class GTM:
         if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
-        return self.gtm_service.accounts().containers().workspaces().folders().update(path=path, body=body).execute()
+        try:
+            return self.gtm_service.accounts().containers().workspaces().folders().update(path=path, body=body).execute()
+        except:
+            return {}
+    
+    def updateTag(self, path, body):
+        try:
+            return self.gtm_service.accounts().containers().workspaces().tags().update(path=path, body=body).execute()
+        except:
+            return {}
+    
+    def updateTrigger(self, path, body):
+        return self.gtm_service.accounts().containers().workspaces().triggers().update(path=path, body=body).execute()
+        # try:
+        #     return self.gtm_service.accounts().containers().workspaces().triggers().update(path=path, body=body).execute()
+        # except:
+        #     return {}
+    
+    def updateVariable(self):
+        pass
     
     def existAccount(self, name):
         for account in self.accountList:
