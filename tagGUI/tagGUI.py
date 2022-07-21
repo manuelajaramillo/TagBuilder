@@ -10,11 +10,8 @@ from urllib.parse import urlparse
 from tkinter import font
 from tkinter.constants import OFF
 
-<<<<<<< HEAD
 #from tagModules.GTM import GTM
-=======
-from tagModules.GTM import AudienceTag, CustomTemple, GTM, PageviewTrigger, ScrollTrigger, TimerTrigger
->>>>>>> development
+#from tagModules.GTM import AudienceTag, CustomTemple, GTM, PageviewTrigger, ScrollTrigger, TimerTrigger
 from tagModules.urlExtractor import urlDomains as webDOM
 from tagModules.pixelBot import pixelBot
 from tagModules.handleFile import xlsxFile
