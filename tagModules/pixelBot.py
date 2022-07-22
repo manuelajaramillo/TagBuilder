@@ -57,6 +57,12 @@ class pixelBot:
         self.url = url
 
     def setDriver(self, url):
+        """This method allow us to set-ups the selenium marionette and load a URL given.
+            Parameters:
+                url: URL parameter of the website to load.
+            Return:
+                None: None
+        """
         if self.set:
             self.driver = self.setHeadlessMode()
             self.set    = False
@@ -71,6 +77,11 @@ class pixelBot:
         return self.driver
 
     def setHeadlessMode(self):
+        """This methods allows us to set-up the marionette of selenium.
+
+        Returns:
+            WebDriver: Marionette of Selenium.
+        """
         fireFoxOptions = webdriver.FirefoxOptions()
         fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
@@ -79,19 +90,25 @@ class pixelBot:
         return webdriver.Firefox(service=service, options = fireFoxOptions)
     
     def loadPage(self, url = None):
+        """This method allow to the marionette load a website.
+            Parameters:
+                url(optional): If a url parameter is given, load the website given. In other cases,
+                load the website set-up in the url attribute.
+            Return:
+                None: None
+        """
         if url == None:
             url = self.url
         self.driver.get(url)
-        
-    """Function that implement a wait while there is a change in the URL.
-       Parameters:
-            url:
-            timeout:
-            kkk
-       Return:
-            Boolean: True or false if a change is detected in the URL.
-    """
+    
     def waitChangeURL(self, url, timeout=60):
+        """This method implement a waiting while detects if the URL required had loaded.
+            Parameters:
+                url (String): URL that selenium marionette need to wait to continue.
+                timeout(Int - optional): Time selenium waits while detects if the new URL have been loaded. Default time 60 s.
+            Return:
+                Boolean: True if the marionette loaded the new URL. In other case, return False.
+        """
         try:
             WebDriverWait(self.driver, timeout).until(EC.url_changes(url))
             return True
@@ -104,6 +121,13 @@ class pixelBot:
             Boolean: True/False if there was a change.
     """
     def waitChange(self, locator, attribute, text, timeout):
+        """This method allow us to implement the functionality of waiting while a webelement or webpage changes.
+            Parameters:
+                url(optional): If a url parameter is given, load the website given. In other cases,
+                load the website set-up in the url attribute.
+            Return:
+                None: None
+        """
         try:
             if WebDriverWait(self.driver, 1).until(EC.text_to_be_present_in_element_attribute(locator, attribute, text)):
                 try:
