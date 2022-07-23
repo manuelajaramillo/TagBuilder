@@ -83,7 +83,7 @@ class pixelBot:
             WebDriver: Marionette of Selenium.
         """
         fireFoxOptions = webdriver.FirefoxOptions()
-        fireFoxOptions.headless = True
+        #fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())
@@ -123,8 +123,7 @@ class pixelBot:
     def waitChange(self, locator, attribute, text, timeout):
         """This method allow us to implement the functionality of waiting while a webelement or webpage changes.
             Parameters:
-                url(optional): If a url parameter is given, load the website given. In other cases,
-                load the website set-up in the url attribute.
+                locator(Tuple): Tuple with the Type of .
             Return:
                 None: None
         """
@@ -181,7 +180,7 @@ class pixelBot:
                 pass
             elif typeSearch == 'CLASS':
                 pass
-        return -1, NonegetWebElement
+        return -1, None
         
     
     """ Function that wait certain amount of time while the webelement is enabled.
@@ -588,17 +587,6 @@ class pixelBot:
                     return 'P402'
             else:
                 return 'P404'
-            
-            #WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,'//button/span[contains(text(),"New")]')))[0].click()
-            #WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@class,"PixelModal-name")]')))[0].send_keys(pixelName)
-            #WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,'//span[contains(text(),"Select...") or contains(text(),"View an item") or contains(text(),"Add to cart") or contains(text(),"Initiate checkout") or contains(text(),"Add payment info") or contains(text(),"Purchase") or contains(text(),"Generate lead")]')))[0].click()
-            #WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,'//div[contains(text(),"Generate lead")]')))[0].click()
-            #WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,'//div[contains(text(),"Count all conversions per user")]')))[0].click()
-            #WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,'//button/span[contains(text(),"Save")]')))[0].click()
-            #new_query = '//span[contains(@title,"%s")]'%pixelName
-            #pixelId = re.findall(r'-?\d+\.?\d*', WebDriverWait(self.driver, 5).until(EC.visibility_of_any_elements_located((By.XPATH,new_query)))[0].get_attribute('title'))[0]
-            #snipet_pixel = """<!-- Conversion Pixel - %s - DO NOT MODIFY -->\n<script src="https://secure.adnxs.com/px?id=%s&t=1" type="text/javascript"></script>\n<!-- End of Conversion Pixel -->"""%(pixelName, pixelId)   
-            #return  snipet_pixel
         elif platform == 1:
             self.setDriver('https://displayvideo.google.com/')
             #self.driver.find_elements(By.XPATH,'//material-button[contains(@class,"search")]')[0].click()
@@ -871,38 +859,117 @@ class pixelBot:
                 self.driver.switch_to.default_content()
                 return 'No Tag'
         elif platform == 3:
+            snippet = self.createMinsightPixel(advertiserId, pixelName, customVariable)
+            if snippet == -1:
+                return 'Code: Not Create'
+            else:
+                return snippet
+            # fragment = 'client/%s/activities' % advertiserId
+            # self.setDriver(urlparse('https://amerminsights.mplatform.com')._replace(fragment=fragment).geturl())
+            # iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
+            # self.driver.switch_to.frame(iframe)
+            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(@id,"createButton") and contains(text(),"Create Activity")]'))).click()
+            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[@id="name"]'))).send_keys(pixelName)
+            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//span[contains(text(),"for Consumer Correlation")]'))).click()
+            # if customVariable == 'u/p':
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[0].send_keys('p')
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[0].send_keys('p')
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[1].send_keys('u')
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[1].send_keys('u')
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()
+            # else:
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[0].send_keys(customVariable)
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[0].send_keys(customVariable)
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()  
+            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div[contains(text(),"SAVE")]'))).click()
+            # try:
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,"//div[contains(text(),'Duplicate')]")))
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,"//div/i[contains(@class,'close')]")))[0].click()
+            # except:
+            #     pass
+            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(pixelName+Keys.ENTER)
+            # time.sleep(10)
+            # WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH,'//i[@class="js-activity-tag turbine tag link icon"]'))).click()
+            # snippet = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//textarea[@id="activityTagCode"]'))).get_attribute('value')
+            # self.driver.switch_to.default_content()
+            # return snippet
+        return 'Code: No Platform'
+    
+    def createMinsightPixel(self, advertiserId, pixelName, customVariables):
+        try:
             fragment = 'client/%s/activities' % advertiserId
             self.setDriver(urlparse('https://amerminsights.mplatform.com')._replace(fragment=fragment).geturl())
-            iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
-            self.driver.switch_to.frame(iframe)
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(@id,"createButton") and contains(text(),"Create Activity")]'))).click()
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[@id="name"]'))).send_keys(pixelName)
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//span[contains(text(),"for Consumer Correlation")]'))).click()
-            if customVariable == 'u/p':
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[0].send_keys('p')
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[0].send_keys('p')
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[1].send_keys('u')
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[1].send_keys('u')
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()
-            else:
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[0].send_keys(customVariable)
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[0].send_keys(customVariable)
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()  
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div[contains(text(),"SAVE")]'))).click()
-            try:
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,"//div[contains(text(),'Duplicate')]")))
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,"//div/i[contains(@class,'close')]")))[0].click()
-            except:
-                pass
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(pixelName+Keys.ENTER)
-            time.sleep(10)
-            WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH,'//i[@class="js-activity-tag turbine tag link icon"]'))).click()
-            snippet = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//textarea[@id="activityTagCode"]'))).get_attribute('value')
+            iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@class,"external-iframe")]')
+            if iframe == -1: return -1
+            self.driver.switch_to.frame(iframe[0])
+            activity, activityError = self.getWebElement('XPATH', '//button[contains(@id,"createButton") and contains(text(),"Create Activity")]')
+            if activity == -1:
+                self.driver.switch_to.default_content()
+                return -1
+            activity[0].click()
+            name, nameError = self.getWebElement('XPATH', '//input[@id="name"]')
+            if name == -1: 
+                self.driver.switch_to.default_content()
+                return -1
+            name[0].send_keys(pixelName)
+            correlation, error = self.getWebElement('XPATH', '//span[contains(text(),"for Consumer Correlation")]')
+            if correlation == -1: 
+                self.driver.switch_to.default_content()
+                return -1
+            correlation[0].click()
+        except:
             self.driver.switch_to.default_content()
-            return snippet
-        return 'No pixel'
-    
+            return -1
+        try:
+            variables = customVariables.split('/')
+            for variable, index in zip(variables[:-1], range(len(variables[:-1]))):
+                nameVariable, error = self.getWebElement('XPATH', '//input[contains(@id,"customvariable_")]')
+                if nameVariable != -1: nameVariable[index].send_keys(variable)
+                nameParameter, error = self.getWebElement('XPATH', '//input[contains(@id,"variableId")]')
+                if nameParameter != -1: nameParameter[index].send_keys(variable)
+                add, addError = self.getWebElement('XPATH', '//a[contains(text(),"add")]')
+                if add != -1: add[0].click()
+            else:
+                nameVariable, nameVariableError = self.getWebElement('XPATH', '//input[contains(@id,"customvariable_")]')
+                if nameVariable != -1: nameVariable[index+1].send_keys(variables[-1])
+                nameParameter, error = self.getWebElement('XPATH', '//input[contains(@id,"variableId")]')
+                if nameParameter != -1: nameParameter[index+1].send_keys(variables[-1])
+                add, addError = self.getWebElement('XPATH', '//a[contains(text(),"add")]')
+                if add != -1: add[0].click()
+        except:
+            pass
+        save, saveError = self.getWebElement('XPATH', '//div[contains(text(),"SAVE")]')
+        if save != -1:
+            save[0].click()
+        else:
+            self.driver.switch_to.default_content()
+            return -1
+        duplicateAlert, error = self.getWebElement('XPATH', "//div[contains(text(),'Duplicate')]", timeout_=5)
+        if duplicateAlert != -1:
+            close, closeError = self.getWebElement('XPATH', "//div/i[contains(@class,'close')]")
+            if close != -1: close[0].click()
+        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search...")]')
+        if search != -1:
+            search[0].send_keys(pixelName+Keys.ENTER)
+            iconCode, error = self.getWebElement('XPATH', '//i[@class="js-activity-tag turbine tag link icon"]')
+            if iconCode != -1:
+                iconCode[0].click()
+                code, codeError = self.getWebElement('XPATH', '//textarea[@id="activityTagCode"]')
+                if code != -1: 
+                    snippet = code[0].get_attribute('value')
+                    self.driver.switch_to.default_content()
+                    return snippet
+                else:
+                    self.driver.switch_to.default_content()
+                    return 'Code 404'
+            else:
+                self.driver.switch_to.default_content()
+                return 'Code: 404'
+        else:
+            self.driver.switch_to.default_content()
+            return 'Code: 404'
+            
     def getSnippetCode(self, advertiserId, pixelName, platform):
         if platform == 'Xandr Seg':
             query = 'advertiser_id=%s' % advertiserId
@@ -1287,23 +1354,43 @@ class pixelBot:
                 self.driver.switch_to.default_content()
                 return -1
             
+    def existMinsightsId_(self, advertiserName, advertiserCountry, agency):
+        pass
+            
     def setMinsightsCountry(self, advertiserCountry):
         self.setDriver('https://amerminsights.mplatform.com/')
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[1].click()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(advertiserCountry)
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
+        marketMenu, error = self.getWebElement('XPATH', '//i')
+        if marketMenu != -1: marketMenu[1].click()
+        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
+        if search != -1:
+            search[0].clear()
+            search[0].send_keys(advertiserCountry)
+            search[0].send_keys(Keys.ENTER)
+        
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[1].click()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(advertiserCountry)
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     def setMinsightsAgency(self, agency):
         self.setDriver('https://amerminsights.mplatform.com/')
-        try:
-            WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(text(),"Got it")]'))).click()
-        except:
-            pass
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[0].click()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(agency)
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
+        alertStart, error = self.getWebElement('XPATH', '//button[contains(text(),"Got it")]', timeout_=1, max_iteractions=3)
+        if alertStart != -1: alertStart[0].click()
+        agencyMenu, error = self.getWebElement('XPATH', '//i')
+        if agencyMenu != -1: agencyMenu[0].click()
+        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
+        if search != -1:
+            search[0].clear()
+            search[0].send_keys(agency)
+            search[0].send_keys(Keys.ENTER)
+        # try:
+        #     WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(text(),"Got it")]'))).click()
+        # except:
+        #     pass
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[0].click()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(agency)
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     """ Method that implemented the verification of the pixels in the diferents DSP.
         Parameters:
