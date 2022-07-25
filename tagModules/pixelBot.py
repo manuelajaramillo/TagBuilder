@@ -1358,19 +1358,19 @@ class pixelBot:
         pass
             
     def setMinsightsCountry(self, advertiserCountry):
-        self.setDriver('https://amerminsights.mplatform.com/')
-        marketMenu, error = self.getWebElement('XPATH', '//i')
-        if marketMenu != -1: marketMenu[1].click()
-        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
-        if search != -1:
-            search[0].clear()
-            search[0].send_keys(advertiserCountry)
-            search[0].send_keys(Keys.ENTER)
+        # self.setDriver('https://amerminsights.mplatform.com/')
+        # marketMenu, error = self.getWebElement('XPATH', '//i')
+        # if marketMenu != -1: marketMenu[1].click()
+        # search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
+        # if search != -1:
+        #     search[0].clear()
+        #     search[0].send_keys(advertiserCountry)
+        #     search[0].send_keys(Keys.ENTER)
         
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[1].click()
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(advertiserCountry)
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[1].click()
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(advertiserCountry)
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     def setMinsightsAgency(self, agency):
         self.setDriver('https://amerminsights.mplatform.com/')
