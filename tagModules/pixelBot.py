@@ -1373,24 +1373,24 @@ class pixelBot:
         WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     def setMinsightsAgency(self, agency):
-        self.setDriver('https://amerminsights.mplatform.com/')
-        alertStart, error = self.getWebElement('XPATH', '//button[contains(text(),"Got it")]', timeout_=1, max_iteractions=3)
-        if alertStart != -1: alertStart[0].click()
-        agencyMenu, error = self.getWebElement('XPATH', '//i')
-        if agencyMenu != -1: agencyMenu[0].click()
-        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
-        if search != -1:
-            search[0].clear()
-            search[0].send_keys(agency)
-            search[0].send_keys(Keys.ENTER)
-        # try:
-        #     WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(text(),"Got it")]'))).click()
-        # except:
-        #     pass
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[0].click()
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(agency)
-        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
+        # self.setDriver('https://amerminsights.mplatform.com/')
+        # alertStart, error = self.getWebElement('XPATH', '//button[contains(text(),"Got it")]', timeout_=1, max_iteractions=3)
+        # if alertStart != -1: alertStart[0].click()
+        # agencyMenu, error = self.getWebElement('XPATH', '//i')
+        # if agencyMenu != -1: agencyMenu[0].click()
+        # search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
+        # if search != -1:
+        #     search[0].clear()
+        #     search[0].send_keys(agency)
+        #     search[0].send_keys(Keys.ENTER)
+        try:
+            WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(text(),"Got it")]'))).click()
+        except:
+            pass
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[0].click()
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(agency)
+        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     """ Method that implemented the verification of the pixels in the diferents DSP.
         Parameters:
