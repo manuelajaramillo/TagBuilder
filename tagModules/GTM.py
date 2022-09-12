@@ -4,6 +4,7 @@ from oauth2client import client
 from oauth2client import file
 from oauth2client import tools
 from google.cloud import bigquery
+from googleapiclient.errors import HttpError
 
 import httplib2
 
@@ -19,7 +20,7 @@ DV360    = ['https://www.googleapis.com/auth/display-video', 'displayvideo', 'v1
 
 BIGQUERY = ['https://www.googleapis.com/auth/bigquery', 'api-ops-xaxis']
 
-CREDENTIALS = 'client_secrets.json' 
+CREDENTIALS = 'resources/credentials/client_secrets.json' 
 
 FOLDER_NAME = ''
 
@@ -302,7 +303,7 @@ class GTM:
             Returns:
             Folder: If successful, this method returns a Folders resource in the response body.
         """
-        if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
+        if name == None: name = namingTools.createFileName('Nexus', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
         return self.gtm_service.accounts().containers().workspaces().folders().create(parent=parent, body=body).execute()
@@ -318,7 +319,7 @@ class GTM:
             Returns:
             Folder: If successful, this method returns a Folders resource in the response body.
         """
-        if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
+        if name == None: name = namingTools.createFileName('Nexus', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
         try:
@@ -359,7 +360,6 @@ class GTM:
         elif element == 'Template':
             pass
         elif element == 'Folder':
-            print('Entramos a existElement')
             folders =  self.getAllFolders(parent)
             for folder in folders:
                 if name in folder['name']:
@@ -470,7 +470,7 @@ class TimerTrigger(TriggerTemple):
         
     def _init_timer(self, time, var_value, scroll_depth):
         self.addParameter()
-        self.addParameter('interval', 'template', time)
+        self.addParameter('interval', 'template', str(int(time)*1000))
         self.addParameter('limit', 'template', '1')
         self.addFilter('autoEventFilter', 'endsWith', 'Page Hostname', var_value)
         if self.timerType == 'timerScroll':
@@ -490,6 +490,7 @@ class ScrollTrigger(TriggerTemple):
         self.addParameter('parameter', 'template', 'verticalThresholdUnits', 'PERCENT')
         self.addParameter('parameter', 'template', 'verticalThresholdsPercent', scroll_depth)
         self.addParameter('parameter', 'template', 'triggerStartOption', 'WINDOW_LOAD')
+        self.addParameter('parameter', 'boolean', 'horizontalThresholdOn', 'false')
         if self.scrollType == 'scrollPage': self.addFilter('filter', 'contains', 'Page Path', var_value)
     
     def addParameter(self, nameParameter, typeParameter, keyParameter, valueParameter):

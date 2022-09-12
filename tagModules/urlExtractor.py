@@ -1,5 +1,7 @@
 from requests.exceptions import SSLError
 from urllib.parse import urlparse
+import functools
+import subprocess
 import requests
 import time
 
@@ -39,6 +41,7 @@ class urlDomains:
         self.arraySections = []
         self.urlsets       = []
         self.fixedPaths    = ''
+        self.scheme        = 'https'
         self.searchXML     = True
         self.maxLandings   = 50
         self.sizeWord      = 3
@@ -54,6 +57,14 @@ class urlDomains:
     # This function validate if a url has a valid connection to server in the internet
     # Receive a string url
     def validURL(self, url):
+        """This method validates the succeeded request to a domain.
+
+        Args:
+            url (str): Landing to verify.
+
+        Returns:
+            Boolean: True if the http request was succeeded. False in other case.
+        """        
         try:
             if requests.get(url, headers = HEADERS).status_code == 200:
                 return True
@@ -67,8 +78,13 @@ class urlDomains:
         except:
             return False
     
-    def validRootDomain(self):
-        pass
+    def setScheme(self, scheme):
+        """This method establishes the scheme that TagBuilder will use to build the sitemap.
+
+        Args:
+            scheme (string): Type of scheme as https, http or ftp.
+        """        
+        self.scheme = scheme
     
     def setUrlTarget(self, url):
         self.url_target = url
@@ -107,8 +123,13 @@ class urlDomains:
         self.mainSections  = []
         
     def setHeadlessMode(self):
+        """This methods allows us to set-up the marionette of selenium in a hide mode.
+
+        Returns:
+            WebDriver: Marionette of Selenium.
+        """
         fireFoxOptions = webdriver.FirefoxOptions()
-        fireFoxOptions.headless = True
+        #fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())
@@ -119,25 +140,40 @@ class urlDomains:
             url = self.url_target
         self.driver.get(url)
         
-    # This method receive urlparse type  element and optional array of urlparse type elements.
-    # If the array is not passed, then the url is searched in the attribute subDomains.
-    # Return True if the url is founded in the array and False in other case.
     def searchURL(self, url, arrayDomains = None):
+        """This method receives a url to validate if there is yet in the set of subdomains of the homepage target.
+
+        Args:
+            url (urlparse): Urlparse object of the url to verify
+            arrayDomains (list, optional): Array list of urls where to verify if a url given exists or not. Defaults to None.
+
+        Returns:
+            Boolean: True if the url given exists in the arrayDomains given or array subdomains of the homepage target.
+        """        
+        urlTemp = url.geturl()[:-1] if url.geturl()[-1] == '/' else url.geturl().replace('.html', '').replace('.php', '')
         if arrayDomains == None:
             arrayDomains = self.subDomains
         for domain in arrayDomains:
-            if url.geturl() == domain.geturl():
+            domainTemp = domain.geturl()[:-1] if domain.geturl()[-1] == '/' else domain.geturl().replace('.html', '').replace('.php', '')
+            if urlTemp == domainTemp:
                 return True
         return False
     
-    # This method receive a URL parameter and determine if the landing owns to right page
-    # or this URL redirect to type file type as pdf, excel, image or other type of file.
     def opt_url(self, url, type_ = None):
+        """This method validates if a URL owns to the homepage's domain given to the TagBuilder.
+
+        Args:
+            url (urlparse or string): URL given to analize if own to the homepage's domain.
+            type_ (string or None, optional): Determine if the URL given is in urlparse format or no. Defaults to None.
+
+        Returns:
+            Boolean: True if the URL given own to homepage's domain. False in other case.
+        """        
         if type_ == None:
             url_ = url
         else:
             url_ = urlparse(url)
-        if urlparse(self.url_target).netloc != url_.netloc or url_.scheme != 'https':
+        if urlparse(self.url_target).netloc != url_.netloc or url_.netloc == '' or url_.scheme != self.scheme:
             return False
         for DP in DISALLOW_PATH:
             if DP in url_.path:
@@ -145,12 +181,19 @@ class urlDomains:
         else:
             return True
     
-    # This function receive a url string and optional parameter if it's necesary to parse URL 
-    # If this URL isn't in the URLs founded until the moment and it's a valid URL then it's added
-    def addSudDomain(self, subDomain, index = None, type_ = None):
+    def addSubDomain(self, subDomain, index = None, type_ = None):
+        """This method adds a subdomain given if it is a valid subdomain of the homepage's
+        domain and it isn't adding yet.
+
+        Args:
+            subDomain (string or urlpase): Subdomain given to add the subdomains array founded.
+            index (int, optional): If a index position is given, then the subdomain will add 
+            in that position, in other case in the last position. Defaults to None.
+            type_ (string or None, optional): Determine if the URL is given in urlparse format or no. Defaults to None.
+        """        
         if type_ == None:
             subDomain = urlparse(subDomain)
-        if not self.searchURL(subDomain) and self.opt_url(subDomain):
+        if self.opt_url(subDomain) and not self.searchURL(subDomain):
             if index == None:
                 self.subDomains.append(subDomain)
             else:
@@ -158,6 +201,12 @@ class urlDomains:
 
     # Delete all URL or one URL  from the array of URLs founded in the website        
     def deleteSubDomain(self, index = None):
+        """This method deletes all URL or just one from the URL's array that was founded in the website.
+
+        Args:
+            index (string, int or None, optional): Keyword "All" to delete all URL or the position 
+            index of the URL to delete. Defaults to None.
+        """        
         if index == None:
             self.subDomains.pop()
         elif index == 'All':
@@ -173,29 +222,44 @@ class urlDomains:
     
     def existGTM(self, url):
         GTMs = []
-        GTM_ID = 'GTM-XXXXXXX'
-        self.setDriver(url)
-        time.sleep(10)
-        GTMs = self.driver.find_elements(By.XPATH,'//script[contains(text(),"(function(w,d,s,l,i)") or contains(text(),"googletagmanager")]')
-        if len(GTMs)>0:
-            IDs = self.driver.find_elements(By.XPATH,'//script[contains(@src,"googletagmanager") and contains(@src,"GTM")]')
-            for ID in IDs:
-                ID = urlparse(ID.get_attribute('src'))
-                for GTM in GTMs:
-                    if ID.query[3:] in GTM.get_attribute('textContent'):
-                        return True, ID.query[3:]
+        #GTM_ID = 'GTM-XXXXXXX'
+        setDriver = True if self.driver == None else False
+        self.setDriver(url, setDriver)
+        try:
+            GTMs  = self.driver.execute_script('return google_tag_manager')
+            print(GTMs)
+            gtmId = ''
+            for key in GTMs:
+                if 'GTM-' in key:
+                    gtmId += key+'/'
+            if gtmId == '':
+                return False, 'GTM-XXXXXXX'
             else:
-                for GTM in GTMs:
-                    if 'GTM-' in GTM.get_attribute('textContent'):
-                        try:
-                            GTM_ID = GTM.get_attribute('textContent')[GTM.get_attribute('textContent').find('GTM-'):GTM.get_attribute('textContent').find('GTM-')+11]
-                        except:
-                            pass
-                        return True, GTM_ID
-                else:
-                    return True, GTM_ID
-        else:
-            return False, GTM_ID
+                print(gtmId[:-1])
+                return True, gtmId[:-1]      
+        except:
+            return False, 'GTM-XXXXXXX'
+        # time.sleep(10)
+        # GTMs = self.driver.find_elements(By.XPATH,'//script[contains(text(),"(function(w,d,s,l,i)") or contains(text(),"googletagmanager")]')
+        # if len(GTMs)>0:
+        #     IDs = self.driver.find_elements(By.XPATH,'//script[contains(@src,"googletagmanager") and contains(@src,"GTM")]')
+        #     for ID in IDs:
+        #         ID = urlparse(ID.get_attribute('src'))
+        #         for GTM in GTMs:
+        #             if ID.query[3:] in GTM.get_attribute('textContent'):
+        #                 return True, ID.query[3:]
+        #     else:
+        #         for GTM in GTMs:
+        #             if 'GTM-' in GTM.get_attribute('textContent'):
+        #                 try:
+        #                     GTM_ID = GTM.get_attribute('textContent')[GTM.get_attribute('textContent').find('GTM-'):GTM.get_attribute('textContent').find('GTM-')+11]
+        #                 except:
+        #                     pass
+        #                 return True, GTM_ID
+        #         else:
+        #             return True, GTM_ID
+        # else:
+        #     return False, GTM_ID
         
     def findTagAttributes(self, tag, return_attribute = 'url'):
         if tag == 'sitemapindex' and not self.stop:
@@ -204,11 +268,10 @@ class urlDomains:
                 sitemaps = self.driver.find_elements(By.TAG_NAME, 'loc')
                 for sitemap in sitemaps:
                     if self.stop: break
-                    print(sitemap.get_attribute('textContent'))
                     if '.xml' in sitemap.get_attribute('textContent'):
                         sitemap_urls.append(sitemap.get_attribute('textContent'))
                     else:
-                        self.addSudDomain(sitemap.get_attribute('textContent'))
+                        self.addSubDomain(sitemap.get_attribute('textContent'))
                 if len(sitemap_urls) > 0:
                     for sitemap_url in sitemap_urls:
                         if self.stop: break
@@ -225,9 +288,9 @@ class urlDomains:
                 urls = []
                 urls = self.driver.find_elements(By.TAG_NAME, 'loc')
                 for url in urls:
-                    #self.addSudDomain(sitemap.text)
+                    #self.addSubDomain(sitemap.text)
                     if self.stop: break
-                    self.addSudDomain(url.get_attribute('textContent'))
+                    self.addSubDomain(url.get_attribute('textContent'))
                     print(url.get_attribute('textContent'))
             except:
                 try:
@@ -246,7 +309,7 @@ class urlDomains:
                     if '.xml' in url.get_attribute('textContent'):
                         sitemaps_url.append(url.get_attribute('textContent'))
                     else:
-                        self.addSudDomain(url.get_attribute('textContent'))
+                        self.addSubDomain(url.get_attribute('textContent'))
                 if len(sitemaps_url) > 0:
                     for sitemap in sitemaps_url:
                         if self.stop: break
@@ -347,13 +410,14 @@ class urlDomains:
                 if fixed_path not in str(self.allDomains[i].geturl()):
                     self.allDomains.pop(i)   
     
-    # This function sort of all urls founded in the webpage in two categories:
-    # SubDomains: domains that own to the main domain given
-    # Domains: domains that not own to the main domain given
     def getSubDomains(self):
+        """This function sort of all urls founded in the webpage in two categories:
+            SubDomains: domains that own to the main domain given
+            Domains: domains that not own to the main domain given
+        """        
         for url in self.allDomains:
             if urlparse(self.url_target).netloc == url.netloc:
-                self.addSudDomain(url, type_ = 1)
+                self.addSubDomain(url, type_ = 1)
             elif len(url.netloc) > 0 and not self.searchURL(url, self.domains):
                 self.domains.append(url)
             if self.stop:
@@ -834,11 +898,13 @@ class urlDomains:
                     arraySections.pop(i)
                 if len(arraySections)<self.maxCategories+1:
                     break
-        
-        if len(urls)>1:
-            self.mainSections.append('Otros')
+                
+        self.mainSections.append('Otros')
+        if len(urls) == 0: 
+            arraySections.append('/') 
+        else: 
             arraySections.append(urls[1:])
-            
+                
         for i in range(len(arraySections)):
             arraySections[i].sort()
         self.mainSections.insert(0,'') 

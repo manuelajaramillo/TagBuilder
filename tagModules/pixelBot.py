@@ -1,3 +1,8 @@
+"""_summary_
+
+Returns:
+    None: None
+"""
 from urllib.parse import urlparse
 import requests
 import time, sys
@@ -38,22 +43,30 @@ MARKETS    = {
 
 class pixelBot:
     def __init__(self):
-        self.driver       = None
-        self.url          = None
-        self.authFail     = False
-        self.set          = True
-        self.reqCode      = False
-        self.verifyWE     = None
-        self.codeWE       = None
-        self.emailWE      = None
-        self.passwdWE     = None
-        self.submitWE     = None
-        self.startLog     = False
-        self.code         = None
-        self.approve      = False
-        self.viewProgress = 0
+        """Constructor Method of PixelBot Class. It inicializes the attributes with default values.
+        """        
+        self.driver        = None
+        self.url           = None
+        self.authFail      = False
+        self.set           = True
+        self.reqCode       = False
+        self.verifyWE      = None
+        self.codeWE        = None
+        self.emailWE       = None
+        self.passwdWE      = None
+        self.submitWE      = None
+        self.startLog      = False
+        self.code          = None
+        self.approve       = False
+        self.viewProgress  = 0
+        self.seleniumDelay = 30
 
     def setUrl(self, url):
+        """This method sets the target URL that pixelBot spyder is working on.
+
+        Args:
+            url (str): URL target.
+        """        
         self.url = url
 
     def setDriver(self, url):
@@ -71,13 +84,23 @@ class pixelBot:
         self.loadPage()
 
     def getUrl(self):
+        """This method retrieves the URL target that PixelBot is working on.
+
+        Returns:
+            None: None
+        """        
         return self.url
 
     def getDriver(self):
+        """This method retrieves the current instance of the PixelBot
+
+        Returns:
+            WebDriver: PixelBot Spyder instance.
+        """        
         return self.driver
 
     def setHeadlessMode(self):
-        """This methods allows us to set-up the marionette of selenium.
+        """This methods allows us to set-up the marionette of selenium in a hide mode.
 
         Returns:
             WebDriver: Marionette of Selenium.
@@ -88,6 +111,14 @@ class pixelBot:
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())
         return webdriver.Firefox(service=service, options = fireFoxOptions)
+    
+    def setSeleniumDelay(self, delay):
+        """This method sets a time delay to handle the load-times of the webelements.
+
+        Args:
+            delay (int): Amount the time in seconds that to implement as delay.
+        """        
+        self.seleniumDelay = delay
     
     def loadPage(self, url = None):
         """This method allow to the marionette load a website.
@@ -115,18 +146,18 @@ class pixelBot:
         except:
             return False
         
-    """Function that detects if there was a change in a webpage or webelement.
-        Parameters:
-        Return:
-            Boolean: True/False if there was a change.
-    """
     def waitChange(self, locator, attribute, text, timeout):
-        """This method allow us to implement the functionality of waiting while a webelement or webpage changes.
-            Parameters:
-                locator(Tuple): Tuple with the Type of .
-            Return:
-                None: None
-        """
+        """This method allow us to implement the functionality of waiting while a webElement or Webpage changes.
+
+        Args:
+            locator (tuple): Tuple with the parameters to locate the webElement to track. For example: (By.XPATH, "/a[@class='idClass']")
+            attribute (string): Type of attribute in the webElement to track.
+            text (str): Desired value of the attribute to which it should change. 
+            timeout (_type_): Time of waiting to change the attribute value.
+
+        Returns:
+            Boolean: True if the attribute value changes to the desired value. In other case, False.
+        """        
         try:
             if WebDriverWait(self.driver, 1).until(EC.text_to_be_present_in_element_attribute(locator, attribute, text)):
                 try:
@@ -142,6 +173,20 @@ class pixelBot:
             WebElement, error: WebElement or -1, and error object or None     
     """   
     def getWebElement(self, typeSearch, expression, timeout_=10, max_iteractions=6, visible = True, driver = None):
+        """This method implement a mechanism of serching of a webElement with a time of wait in case that the webElement is not avalaible
+        due a loadtimes.
+
+        Args:
+            typeSearch (str): Type of search method. For example: XPATH
+            expression (str): Search expresion to locate a desired webElement.
+            timeout_ (int, optional): Delay Time between each waiting. Defaults to 10.
+            max_iteractions (int, optional): Number of waiting to locate the desired webElement. Defaults to 6.
+            visible (bool, optional): True if the webElement to locate it's visible. Defaults to True.
+            driver (_type_, optional): WebElement if the searching in nested. Defaults to None.
+
+        Returns:
+            tuple: WebElement if there is or -1, and the error element in the case of searching failed.
+        """         
         flat = 0
         while flat<max_iteractions:
             if typeSearch=='XPATH' and visible:
@@ -193,6 +238,18 @@ class pixelBot:
             None:   None.
     """
     def waitWebElement(self, webElement, expression, condition='default', timeout=1, interactions=60):
+        """Function that wait certain amount of time while the webelement is enabled.
+
+        Args:
+            webElement (_type_): HTML element to verify is enabled or not.
+            expression (_type_): Search expresion to locate a desired webElement to track.
+            condition (str, optional): _description_. Defaults to 'default'.
+            timeout (int, optional): _description_. Defaults to 1.
+            interactions (int, optional): _description_. Defaults to 60.
+
+        Returns:
+            _type_: _description_
+        """        
         flat = 0
         code = 200
         if condition == 'default':
@@ -1329,68 +1386,105 @@ class pixelBot:
             return -1
         self.setDriver('https://amerminsights.mplatform.com/#client')
         self.driver.switch_to.default_content()
-        iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
-        self.driver.switch_to.frame(iframe)
-        try:
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(advertiserName+Keys.ENTER)
-        except:
+        
+        iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@class,"external-iframe")]')
+        if iframe == -1: return -1
+        self.driver.switch_to.frame(iframe[0])
+        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search...")]')
+        if search == -1:
             self.driver.switch_to.default_content()
-            iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
-            self.driver.switch_to.frame(iframe)
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(advertiserName+Keys.ENTER)
-        try:
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//td[contains(text(),"No results found")]')))
-            self.driver.switch_to.default_content()
-            return -1
-        except:
-            activities = WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//tbody/tr/td/div/a')))
-            rows       = WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//tbody/tr')))     
-            for activity, row in zip(activities,rows):
-                if activity.text == advertiserName or activity.text.casefold() == advertiserName.casefold():
-                    id_ = row.find_elements(By.TAG_NAME,'td')[2].text
-                    self.driver.switch_to.default_content()
-                    return id_
-            else:
+            iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@class,"external-iframe")]')
+            if iframe == -1: return -1
+            self.driver.switch_to.frame(iframe[0])
+            search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search...")]')
+            if search == -1: 
                 self.driver.switch_to.default_content()
                 return -1
+        search[0].clear()
+        search[0].send_keys(advertiserName)
+        self.doWebElement(search[0], 'Enter')
+        notFound, Error = self.getWebElement('XPATH', '//td[contains(text(),"No results found")]', timeout_=2) 
+        if notFound != -1: 
+            self.driver.switch_to.default_content()
+            return -1
+        activities, Error = self.getWebElement('XPATH', '//tbody/tr/td/div/a')
+        rows, rowsError   = self.getWebElement('XPATH', '//tbody/tr')
+        if activities == -1 or rows == -1: 
+            self.driver.switch_to.default_content()
+            return -1
+        for activity, row in zip(activities, rows):
+            if activity.text == advertiserName or activity.text.casefold() == advertiserName.casefold():
+                id_ = row.find_elements(By.TAG_NAME,'td')[2].text
+                self.driver.switch_to.default_content()
+                return id_
+        else:
+            self.driver.switch_to.default_content()
+            return -1
+        
+        # iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
+        # self.driver.switch_to.frame(iframe)
+        # try:
+        #     WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(advertiserName+Keys.ENTER)
+        # except:
+        #     self.driver.switch_to.default_content()
+        #     iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
+        #     self.driver.switch_to.frame(iframe)
+        #     WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(advertiserName+Keys.ENTER)
+        # try:
+        #     WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//td[contains(text(),"No results found")]')))
+        #     self.driver.switch_to.default_content()
+        #     return -1
+        # except:
+        #     activities = WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//tbody/tr/td/div/a')))
+        #     rows       = WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//tbody/tr')))     
+        #     for activity, row in zip(activities,rows):
+        #         if activity.text == advertiserName or activity.text.casefold() == advertiserName.casefold():
+        #             id_ = row.find_elements(By.TAG_NAME,'td')[2].text
+        #             self.driver.switch_to.default_content()
+        #             return id_
+        #     else:
+        #         self.driver.switch_to.default_content()
+        #         return -1
             
     def existMinsightsId_(self, advertiserName, advertiserCountry, agency):
         pass
             
     def setMinsightsCountry(self, advertiserCountry):
-        # self.setDriver('https://amerminsights.mplatform.com/')
-        # marketMenu, error = self.getWebElement('XPATH', '//i')
-        # if marketMenu != -1: marketMenu[1].click()
-        # search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
-        # if search != -1:
-        #     search[0].clear()
-        #     search[0].send_keys(advertiserCountry)
+        self.setDriver('https://amerminsights.mplatform.com/')
+        marketMenu, error = self.getWebElement('XPATH', '//i')
+        if marketMenu != -1: marketMenu[1].click()
+        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
+        if search != -1:
+            search[0].clear()
+            search[0].send_keys(advertiserCountry)
+            self.doWebElement(search[0], 'Enter')
         #     search[0].send_keys(Keys.ENTER)
         
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[1].click()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(advertiserCountry)
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[1].click()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(advertiserCountry)
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     def setMinsightsAgency(self, agency):
         self.setDriver('https://amerminsights.mplatform.com/')
-        # alertStart, error = self.getWebElement('XPATH', '//button[contains(text(),"Got it")]', timeout_=1, max_iteractions=3)
-        # if alertStart != -1: alertStart[0].click()
-        # agencyMenu, error = self.getWebElement('XPATH', '//i')
-        # if agencyMenu != -1: agencyMenu[0].click()
-        # search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
-        # if search != -1:
-        #     search[0].clear()
-        #     search[0].send_keys(agency)
+        alertStart, error = self.getWebElement('XPATH', '//button[contains(text(),"Got it")]', timeout_=1, max_iteractions=3)
+        if alertStart != -1: alertStart[0].click()
+        agencyMenu, error = self.getWebElement('XPATH', '//i')
+        if agencyMenu != -1: agencyMenu[0].click()
+        search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search")]')
+        if search != -1:
+            search[0].clear()
+            search[0].send_keys(agency)
+            self.doWebElement(search[0], 'Enter')
         #     search[0].send_keys(Keys.ENTER)
-        try:
-            WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(text(),"Got it")]'))).click()
-        except:
-            pass
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[0].click()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(agency)
-        WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
+        # try:
+        #     WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(text(),"Got it")]'))).click()
+        # except:
+        #     pass
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//i')))[0].click()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].clear()
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(agency)
+        # WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search")]')))[0].send_keys(Keys.ENTER)
         
     """ Method that implemented the verification of the pixels in the diferents DSP.
         Parameters:
@@ -1458,7 +1552,6 @@ class pixelBot:
                             self.driver.switch_to.default_content()
                             return False
                     except:
-                        print('Te pille!')
                         self.driver.switch_to.default_content()
                         return False
                 else:
@@ -1504,20 +1597,48 @@ class pixelBot:
         elif platform == 'Minsights':
             fragment = 'client/%s/activities' % advertiserId
             self.setDriver(urlparse('https://amerminsights.mplatform.com/')._replace(fragment=fragment).geturl())
-            iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
-            self.driver.switch_to.frame(iframe)
-            WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(pixelName+Keys.ENTER)
-            try:
-                WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//td[contains(text(),"No results found")]')))
-                pixelId = urlparse(self.driver.current_url).path.split('/')[-1]
+            
+            self.driver.switch_to.default_content()
+            iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@class,"external-iframe")]')
+            if iframe == -1: return False
+            self.driver.switch_to.frame(iframe[0])
+            search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search...")]')
+            if search == -1:
+                self.driver.switch_to.default_content()
                 return False
-            except:
-                activities = WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//tbody/tr/td/div/a')))         
-                for activity in activities:
-                    if activity.text == pixelName:
-                        return True
-                else:
-                    return False
+            search[0].clear()
+            search[0].send_keys(pixelName)
+            self.doWebElement(search[0], 'Enter')
+            notFound, Error = self.getWebElement('XPATH', '//td[contains(text(),"No results found")]', timeout_=2) 
+            if notFound != -1: 
+                self.driver.switch_to.default_content()
+                return False
+            activities, Error = self.getWebElement('XPATH', '//tbody/tr/td/div/a')
+            if activities == -1:
+                self.driver.switch_to.default_content()
+                return False
+            for activity in activities:
+                if activity.text == pixelName:
+                    self.driver.switch_to.default_content()
+                    return True
+            else:
+                self.driver.switch_to.default_content()
+                return False
+            
+            # iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
+            # self.driver.switch_to.frame(iframe)
+            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(pixelName+Keys.ENTER)
+            # try:
+            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//td[contains(text(),"No results found")]')))
+            #     pixelId = urlparse(self.driver.current_url).path.split('/')[-1]
+            #     return False
+            # except:
+            #     activities = WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//tbody/tr/td/div/a')))         
+            #     for activity in activities:
+            #         if activity.text == pixelName:
+            #             return True
+            #     else:
+            #         return False
                             
     def existTaboolaPixel(self, advertiserId):
         query = 'accountId=%s' % advertiserId
