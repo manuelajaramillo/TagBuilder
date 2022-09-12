@@ -4,6 +4,7 @@ from oauth2client import client
 from oauth2client import file
 from oauth2client import tools
 from google.cloud import bigquery
+from googleapiclient.errors import HttpError
 
 import httplib2
 
@@ -19,7 +20,7 @@ DV360    = ['https://www.googleapis.com/auth/display-video', 'displayvideo', 'v1
 
 BIGQUERY = ['https://www.googleapis.com/auth/bigquery', 'api-ops-xaxis']
 
-CREDENTIALS = 'client_secrets.json' 
+CREDENTIALS = 'resources/credentials/client_secrets.json' 
 
 FOLDER_NAME = ''
 
@@ -490,6 +491,7 @@ class ScrollTrigger(TriggerTemple):
         self.addParameter('parameter', 'template', 'verticalThresholdUnits', 'PERCENT')
         self.addParameter('parameter', 'template', 'verticalThresholdsPercent', scroll_depth)
         self.addParameter('parameter', 'template', 'triggerStartOption', 'WINDOW_LOAD')
+        self.addParameter('parameter', 'boolean', 'horizontalThresholdOn', 'false')
         if self.scrollType == 'scrollPage': self.addFilter('filter', 'contains', 'Page Path', var_value)
     
     def addParameter(self, nameParameter, typeParameter, keyParameter, valueParameter):
