@@ -20,7 +20,7 @@ MENU_DEFINITION = (
             'File- &New/Ctrl+N/self.newFile, Save/Ctrl+S/self.save_file, SaveAs/Ctrl+Shift+S/self.save_as, sep, Exit/Ctrl+Q/self.askQuit',
             'Edit- Settings/Ctrl+Z/self.setting, sep, Advanced Settings/Alt+F5/self.advancedSetting',
             'View- SiteMap Builder//self.show_siteMapTab, Pixel Creator//self.show_PixelTab, GTM Integrator//self.show_GTMTab',
-            'Help- Documentation/F2/self.documentation, About/F1/self.aboutTagCalc'
+            'Help- Documentation/F2/self.documentation, About/F1/self.aboutTagBuilder'
         )
 
 LOGIN_PAGES     = (
@@ -204,7 +204,7 @@ class FrameWork2D(ttk.Frame):
     def documentation(self):
         subprocess.Popen(p.abspath('resources/documentation/TagBuilder_Manual.pdf'), shell=True)
     
-    def aboutTagCalc(self):
+    def aboutTagBuilder(self):
         pass
     
 class tagFrontEnd(FrameWork2D):
@@ -249,6 +249,7 @@ class tagFrontEnd(FrameWork2D):
         self.searchXML     = tk.BooleanVar()
         self.show_         = tk.BooleanVar()
         self.seleniumDelay = tk.IntVar()
+        self.waitings      = tk.IntVar()
         self.users         = [tk.StringVar()]
         self.passwords     = [tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()]
         self.maxCategory   = tk.IntVar()
@@ -283,7 +284,8 @@ class tagFrontEnd(FrameWork2D):
         self.viewProgress.set(0)
         self.pixelProgress.set(0)
         self.tagProgress.set(0)
-        self.seleniumDelay.set(30)
+        self.seleniumDelay.set(2)
+        self.waitings.set(6)
         self.scrollDeep.set('50')
         self.timerLast.set('30')
         self.scheme.set('https')
@@ -292,6 +294,8 @@ class tagFrontEnd(FrameWork2D):
         self.codeVerify = None
         self.closeTopW  = False
         self.users[0].set("")
+        self.pixelBot.setSeleniumDelay(self.seleniumDelay.get())
+        self.pixelBot.setWaitings(self.waitings.get())
         for passwd in self.passwords:
             passwd.set("")
         self.setWindow = tk.Toplevel()
@@ -309,7 +313,7 @@ class tagFrontEnd(FrameWork2D):
     
     def _set_credentials_threaded(self):
         """This function allows to get the DSP's credentials without
-            blocking the main GUI at the start the program TagCalc.
+            blocking the main GUI at the start the program TagBuilder.
 
         Returns:
             None: None
@@ -745,11 +749,46 @@ class tagFrontEnd(FrameWork2D):
             self.CAPITable.grid(column=0, row=0, sticky='NESW')
 
     def settingWindow(self, advanced=False):
-        """This method implements the building of setting's window.
-
+        """
+            This method implements the building of setting's window.
+            
         Args:
             advanced (bool, optional): If True, advanced setting window is built. Defaults the basic setting is built.
-        """                          
+        """        
+        self.setWindow = tk.Toplevel(self.root)
+        TITLE = PROGRAM_NAME+' Settings'
+        self.setWindow.title(TITLE)
+        self.setWindow.iconbitmap('resources/xaxis32x32.ico')
+        self.setWindow.geometry("600x330+300+100")
+        #General Section
+        general_label_frame = ttk.LabelFrame(self.setWindow, text='General', width=595, height=100)
+        general_frame       = ttk.Frame(general_label_frame)
+        general_label_frame.grid(column=0, row=0)
+        general_label_frame.grid_propagate(0)
+        general_frame.grid(column=0, row=0)
+        #SiteMap Section
+        sitemap_label_frame = ttk.LabelFrame(self.setWindow, text='SiteMap', width=595, height=100)
+        sitemap_frame       = ttk.Frame(sitemap_label_frame)
+        sitemap_label_frame.grid(column=0, row=1)
+        sitemap_label_frame.grid_propagate(0)
+        sitemap_frame.grid(column = 0, row=0)
+        #Pixels Section
+        pixels_label_frame = ttk.LabelFrame(self.setWindow, text='Pixels', width=595, height=100)
+        pixels_frame       = ttk.Frame(pixels_label_frame)
+        pixels_label_frame.grid(column=0, row=2)
+        pixels_label_frame.grid_propagate(0)
+        pixels_frame.grid(column = 0, row=0)
+        #GTM Section
+        # gtm_label_frame = ttk.LabelFrame(self.setWindow, text='GTM', width=595, height=100)
+        # gtm_frame       = ttk.Frame(gtm_label_frame)
+        # gtm_label_frame.grid(column = 0, row=3)
+        # gtm_label_frame.grid_propagate(0)
+        # gtm_frame.grid(column = 0, row=0)
+        
+        #Buttons Section
+        btn_frame       = ttk.Frame(self.setWindow)
+        btn_frame.grid(column = 0, row=4)
+                        
         if not advanced:      
             self.setWindow = tk.Toplevel(self.root)
             TITLE = PROGRAM_NAME+' Settings'
@@ -808,7 +847,6 @@ class tagFrontEnd(FrameWork2D):
             #self.meta_passwd.grid(column=3, row=2, sticky=tk.W)
             ttk.Checkbutton(general_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=3, row=2, sticky=tk.W)
         
-        
             """
                 Sitemap Settings
             """
@@ -859,9 +897,13 @@ class tagFrontEnd(FrameWork2D):
             timerLast.set(self.timerLast.get())
             timerLast.grid(column=3, row=0)
             ttk.Label(pixels_label_frame, text="Delay Execution: ").grid(column=0, row=2, sticky=tk.W)
-            delaySelenium = ttk.Scale(pixels_label_frame, from_=10, to=240, command=self.set_seleniumDelay, variable=self.seleniumDelay)
+            delaySelenium = ttk.Scale(pixels_label_frame, from_=1, to=20, command=self.set_seleniumDelay, variable=self.seleniumDelay)
             delaySelenium.grid(column=1, row=3, sticky=tk.W)
             ttk.Label(pixels_label_frame, textvariable=self.seleniumDelay, font=('Arial',8,'italic')).grid(column=1, row=2, sticky=tk.W)
+            ttk.Label(pixels_label_frame, text="Waitings: ").grid(column=2, row=2, sticky=tk.W)
+            waitings = ttk.Scale(pixels_label_frame, from_=1, to=20, command=self.set_waitings, variable= self.waitings)
+            waitings.grid(column=3, row=3, sticky=tk.W)
+            ttk.Label(pixels_label_frame, textvariable=self.waitings, font=('Arial',8,'italic')).grid(column=3, row=2, sticky=tk.W)
         else:
             self.setWindow = tk.Toplevel(self.root)
             TITLE = PROGRAM_NAME+' Advanced Settings'
@@ -897,6 +939,10 @@ class tagFrontEnd(FrameWork2D):
     def set_seleniumDelay(self, event=None):
         self.pixelBot.setSeleniumDelay(int(self.seleniumDelay.get()))
         print(self.pixelBot.seleniumDelay)
+        
+    def set_waitings(self, event=None):
+        self.pixelBot.setWaitings(int(self.waitings.get()))
+        print(self.pixelBot.waitings)
     
     def set_scrollDeep(self, event):
         pass
@@ -1693,7 +1739,6 @@ class tagFrontEnd(FrameWork2D):
                             self.pixelProgress.set(7)
                             self.xandrSeg, self.xandrConv = ([], self.xandrConv) if pixelType=='RTG' else (self.xandrSeg, [])
                             step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
-                            print('Initial Step:', step)
                             for pixel in self.arrayPixels:
                                 if pixelType == 'RTG' and (pixel[6]==None or pixel[6]=='' or pixel[6]=='NO'):
                                     self.xandrSeg.append('NO')
@@ -1711,7 +1756,6 @@ class tagFrontEnd(FrameWork2D):
                                         self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                         #print('El pixel: '+pixel[1]+', existe y no se puede crear!!!')
                                 progress += step
-                                print('Intermediate Steps', progress)
                                 self.pixelProgress.set(progress)
                             print('The snippet are: ')
                             print(self.xandrSeg)
@@ -1738,7 +1782,7 @@ class tagFrontEnd(FrameWork2D):
                                     self.DV360.append('NO')
                                 else:
                                     if not self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]):
-                                        snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=1)
+                                        snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=1, customVariable=pixel[3])
                                         self.DV360.append(snippet)
                                         #pixel.append(snippet)
                                     else:
@@ -2140,7 +2184,7 @@ class tagFrontEnd(FrameWork2D):
                 #self.xlsxFile.saveBook()
             self.advertiser_.set(self.advertiser.get())
             self.btn_save.configure(state='active')
-            self.lanchPopUps('Save', 'The TagCalc file has saved!', 'Press "Ok" to exit.')
+            self.lanchPopUps('Save', 'The TagBuilder file has saved!', 'Press "Ok" to exit.')
         else:
             self.lanchPopUps('Fields missing!', 'Check the Container ID and Advertiser ID!', 'Press "Ok" to exit.')
             
@@ -2257,5 +2301,5 @@ if __name__ == '__main__':
     pass
     # root = tk.Tk()
     # tk.Toplevel()
-    # tagCalc = tagFrontEnd(root)
-    # tagCalc.mainloop()
+    # TagBuilder = tagFrontEnd(root)
+    # TagBuilder.mainloop()

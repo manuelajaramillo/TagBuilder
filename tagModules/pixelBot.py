@@ -59,6 +59,8 @@ class pixelBot:
         self.code          = None
         self.approve       = False
         self.viewProgress  = 0
+        self.seleniumDelay = 2
+        self.waitings      = 6
         self.seleniumDelay = 30
 
     def setUrl(self, url):
@@ -119,6 +121,15 @@ class pixelBot:
             delay (int): Amount the time in seconds that to implement as delay.
         """        
         self.seleniumDelay = delay
+        
+    def setWaitings(self, waitings):
+        """This method sets a number of time that Selenium wait to find a webElement before to
+        raise an exception.
+
+        Args:
+            waitings (int): Number of time to wait for a webElement.
+        """        
+        self.waitings = waitings
     
     def loadPage(self, url = None):
         """This method allow to the marionette load a website.
@@ -135,7 +146,7 @@ class pixelBot:
     def waitChangeURL(self, url, timeout=60):
         """This method implement a waiting while detects if the URL required had loaded.
             Parameters:
-                url (String): URL that selenium marionette need to wait to continue.
+                url (String): URL that selenium marionette wait while it's not changes.
                 timeout(Int - optional): Time selenium waits while detects if the new URL have been loaded. Default time 60 s.
             Return:
                 Boolean: True if the marionette loaded the new URL. In other case, return False.
@@ -145,7 +156,7 @@ class pixelBot:
             return True
         except:
             return False
-        
+       
     def waitChange(self, locator, attribute, text, timeout):
         """This method allow us to implement the functionality of waiting while a webElement or Webpage changes.
 
@@ -166,13 +177,8 @@ class pixelBot:
                     return True
         except:
             return False
-        
-    """
-        This method searches a specific webElement through many iterations....
-        Return:
-            WebElement, error: WebElement or -1, and error object or None     
-    """   
-    def getWebElement(self, typeSearch, expression, timeout_=10, max_iteractions=6, visible = True, driver = None):
+           
+    def getWebElement(self, typeSearch, expression, timeout_=-1, max_iteractions=-1, visible = True, driver = None):
         """This method implement a mechanism of serching of a webElement with a time of wait in case that the webElement is not avalaible
         due a loadtimes.
 
@@ -188,6 +194,8 @@ class pixelBot:
             tuple: WebElement if there is or -1, and the error element in the case of searching failed.
         """         
         flat = 0
+        if timeout_ == -1: timeout_ = self.seleniumDelay
+        if max_iteractions == -1: max_iteractions = self.waitings
         while flat<max_iteractions:
             if typeSearch=='XPATH' and visible:
                 try:
@@ -645,33 +653,45 @@ class pixelBot:
             else:
                 return 'P404'
         elif platform == 1:
-            self.setDriver('https://displayvideo.google.com/')
-            #self.driver.find_elements(By.XPATH,'//material-button[contains(@class,"search")]')[0].click()
-            iconSearch, iconSearchError = self.getWebElement('XPATH', '//material-button[contains(@class,"search _ngcontent")]')
-            if iconSearch != -1: iconSearch[0].click() 
-            search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search by name or ID")]')
-            url = self.driver.current_url
-            if search != -1:
-                search[0].send_keys(advertiserId)
-                self.doWebElement(search[0], 'Enter')
-            if not self.waitChangeURL(url): return '405'
-            try:
-                marketId, h = re.findall(r'-?\d+\.?\d*',self.driver.current_url)
-            except:
-                return '405'
-            if iconSearch == -1 or search == -1: return '401'
-            if self.existFloodlight(pixelName, marketId, advertiserId, 10): return '403'
-            fragment = 'ng_nav/p/%s/a/%s/fl/details'%(marketId,advertiserId)
-            self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
-            existU = self.existVariableDV360('u')
-            existP = self.existVariableDV360('p')
-            if not existU and not existP:
-                self.createCustomVariable_('u')
-                self.createCustomVariable_('p')
-            elif not existU:
-                self.createCustomVariable_('u')
-            elif not existP:
-                self.createCustomVariable_('p')
+            marketId = ''
+            if '/'+advertiserId+'/' in self.driver.current_url:
+                try:
+                    marketId, advId = re.findall(r'\d+', self.driver.current_url)[:2]
+                except:
+                    pass
+            if marketId == '':  
+                self.setDriver('https://displayvideo.google.com/')
+                #self.driver.find_elements(By.XPATH,'//material-button[contains(@class,"search")]')[0].click()
+                iconSearch, iconSearchError = self.getWebElement('XPATH', '//material-button[contains(@class,"search _ngcontent")]')
+                if iconSearch != -1: iconSearch[0].click() 
+                search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search by name or ID")]')
+                url = self.driver.current_url
+                if search != -1:
+                    search[0].send_keys(advertiserId)
+                    self.doWebElement(search[0], 'Enter')
+                if not self.waitChangeURL(url): return 'Pixel not Created'
+                try:
+                    marketId, h = re.findall(r'-?\d+\.?\d*',self.driver.current_url)
+                except:
+                    return 'Pixel not Created'
+                if iconSearch == -1 or search == -1: return 'Pixel not Created'
+            #We need to chance this line: if self.existFloodlight(pixelName, marketId, advertiserId, 10): return '403'
+            #if self.existFloodlight(pixelName, marketId, advertiserId, 5): return '403'
+            path = 'ng_nav/p/%s/a/%s/fl/details'%(marketId,advertiserId)
+            self.setDriver(urlparse(self.driver.current_url)._replace(path=path).geturl())
+            for custom in customVariable.split('/'):
+                existVariable = self.existVariableDV360(custom)
+                if not existVariable:
+                    self.createCustomVariable_(custom)
+            # existU = self.existVariableDV360('u')
+            # existP = self.existVariableDV360('p')
+            # if not existU and not existP:
+            #     self.createCustomVariable_('u')
+            #     self.createCustomVariable_('p')
+            # elif not existU:
+            #     self.createCustomVariable_('u')
+            # elif not existP:
+            #     self.createCustomVariable_('p')
             fragment = 'ng_nav/p/%s/a/%s/fl/events/new'%(marketId,advertiserId)
             self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
             
@@ -696,17 +716,21 @@ class pixelBot:
             iconCustom, iconCustomError = self.getWebElement('XPATH', '//material-icon[@id="open-custom-variables-icon"]')
             if name == -1 or formatt == -1 or typee == -1 or counting == -1 or exclude == -1 or remarketing == -1 or iconCustom == -1: return '401'
             if iconCustom != -1: self.doWebElement(iconCustom[0])
-            if customVariable == 'u/p':
-                existU, indexU = self.existVariable('u')
-                existP, indexP = self.existVariable('p')
-                customs, customsError = self.getWebElement('XPATH', '//picker-tree/div/material-checkbox')
-                if customs != -1:
-                    customs[indexU].click()
-                    customs[indexP].click()
-            else:
-                exist, index = self.existVariable(customVariable)
+            for variable in customVariable.split('/'):
+                exist, index = self.existVariable(variable)
                 customs, customsError = self.getWebElement('XPATH', '//picker-tree/div/material-checkbox')
                 if customs != -1: customs[index].click()
+            # if customVariable == 'u/p':
+            #     existU, indexU = self.existVariable('u')
+            #     existP, indexP = self.existVariable('p')
+            #     customs, customsError = self.getWebElement('XPATH', '//picker-tree/div/material-checkbox')
+            #     if customs != -1:
+            #         customs[indexU].click()
+            #         customs[indexP].click()
+            # else:
+            #     exist, index = self.existVariable(customVariable)
+            #     customs, customsError = self.getWebElement('XPATH', '//picker-tree/div/material-checkbox')
+            #     if customs != -1: customs[index].click()
             save, saveError = self.getWebElement('XPATH','//material-button[contains(@id,"save-button")]')
             if save != -1: self.doWebElement(save[1])
             #save[1].click()
@@ -1075,65 +1099,81 @@ class pixelBot:
             else:
                 return -1
         elif platform == 'DV360':
-            self.setDriver('https://displayvideo.google.com/')
-            iconSearch, iconSearchError = self.getWebElement('XPATH', '//material-button[contains(@class,"search _ngcontent")]')
-            if iconSearch != -1: iconSearch[0].click() 
-            search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search by name or ID")]')
-            url = self.driver.current_url
-            if search != -1:
-                search[0].send_keys(advertiserId)
-                self.doWebElement(search[0], 'Enter')
-            if not self.waitChangeURL(url, 5): return '405'
-            try:
-                marketId, h = re.findall(r'-?\d+\.?\d*',self.driver.current_url)
-            except:
-                return '402'
-            if iconSearch == -1 or search == -1: return '401'
-            url = self.driver.current_url
-            fragment = 'ng_nav/p/%s/a/%s/fl/events'%(marketId,advertiserId)
-            self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
-            if not self.waitChangeURL(url, 5): return '405'
-            removeFilter, removeFilterError = self.getWebElement('XPATH','//material-button[contains(@aria-label,"Remove all filters")]', timeout_=1)
-            if removeFilter != -1: removeFilter[0].click()
-            search, searchError = self.getWebElement('XPATH','//input[contains(@class,"search-box")]')
-            if search != -1:
-                search[0].send_keys(pixelName+Keys.ENTER)
+            marketId = self.getDV360MarketId(advertiserId)
+            if marketId != -1:
+                floodId = self.getFloodlightId(pixelName, marketId, advertiserId)
+                if floodId != -1:
+                    try:
+                        path = 'ng_nav/p/%s/a/%s/fl/fle/%s/code'%(marketId,advertiserId,floodId)
+                        self.setDriver(urlparse(self.driver.current_url)._replace(path=path).geturl())
+                        code, codeError = self.getWebElement('XPATH', '//div[contains(@class,"mirror-text") and contains(@class,"_ngcontent")]', visible = False)
+                        snippet = code[0].get_attribute('textContent') if code != -1 else code
+                        return snippet
+                    except: 
+                        return -1
+                else:
+                    return -1
             else:
-                addFilter, addFilterError  = self.getWebElement('XPATH','//material-fab[contains(@class,"filter-bar-toggle")]')
-                if addFilter != -1: 
-                    addFilter[0].click()
-                    search, searchError = self.getWebElement('XPATH','//input[contains(@class,"search-box")]')
-                    if search != -1:
-                        search[0].send_keys(pixelName+Keys.ENTER)
-                    else:
-                        return '401'
-                else:
-                    return '401'
-            self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', 5)
-            webElement, error = self.getWebElement('XPATH','//div[contains(text(),"Show rows:")]')
-            if webElement != -1: self.driver.execute_script("arguments[0].scrollIntoView();", webElement[0])
-            table, tableError = self.getWebElement('XPATH', '//div[contains(@class,"ess-table-canvas")]')
-            if table != -1:
-                floods, floodsError = self.getWebElement('XPATH', 'div/ess-cell/name-id-cell', visible = False, driver = table[0])
-                if floods != -1:
-                    for flood in floods:
-                        nameId = flood.get_attribute('textContent').split('\n')
-                        if nameId[1] == pixelName:
-                            floodlightId = nameId[2]
-                            url = self.driver.current_url
-                            fragment = 'ng_nav/p/%s/a/%s/fl/fle/%s/code'%(marketId,advertiserId,floodlightId)
-                            self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
-                            if not self.waitChangeURL(url): return '405'
-                            code, codeError = self.getWebElement('XPATH', '//div[contains(@class,"mirror-text") and contains(@class,"_ngcontent")]', visible = False)
-                            snippet = code[0].get_attribute('textContent') if code != -1 else '401'
-                            return snippet
-                    else:
-                        return '401'
-                else:
-                    return '403'
+                return -1 
+            # self.setDriver('https://displayvideo.google.com/')
+            # iconSearch, iconSearchError = self.getWebElement('XPATH', '//material-button[contains(@class,"search _ngcontent")]')
+            # if iconSearch != -1: iconSearch[0].click() 
+            # search, searchError = self.getWebElement('XPATH', '//input[contains(@placeholder,"Search by name or ID")]')
+            # url = self.driver.current_url
+            # if search != -1:
+            #     search[0].send_keys(advertiserId)
+            #     self.doWebElement(search[0], 'Enter')
+            # if not self.waitChangeURL(url, 5): return '405'
+            # try:
+            #     marketId, h = re.findall(r'-?\d+\.?\d*',self.driver.current_url)
+            # except:
+            #     return '402'
+            # if iconSearch == -1 or search == -1: return '401'
+            # url = self.driver.current_url
+            # fragment = 'ng_nav/p/%s/a/%s/fl/events'%(marketId,advertiserId)
+            # self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
+            # if not self.waitChangeURL(url, 5): return '405'
+            # removeFilter, removeFilterError = self.getWebElement('XPATH','//material-button[contains(@aria-label,"Remove all filters")]', timeout_=1)
+            # if removeFilter != -1: removeFilter[0].click()
+            # search, searchError = self.getWebElement('XPATH','//input[contains(@class,"search-box")]')
+            # if search != -1:
+            #     search[0].send_keys(pixelName+Keys.ENTER)
+            # else:
+            #     addFilter, addFilterError  = self.getWebElement('XPATH','//material-fab[contains(@class,"filter-bar-toggle")]')
+            #     if addFilter != -1: 
+            #         addFilter[0].click()
+            #         search, searchError = self.getWebElement('XPATH','//input[contains(@class,"search-box")]')
+            #         if search != -1:
+            #             search[0].send_keys(pixelName+Keys.ENTER)
+            #         else:
+            #             return '401'
+            #     else:
+            #         return '401'
+            # self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', 5)
+            # webElement, error = self.getWebElement('XPATH','//div[contains(text(),"Show rows:")]')
+            # if webElement != -1: self.driver.execute_script("arguments[0].scrollIntoView();", webElement[0])
+            # table, tableError = self.getWebElement('XPATH', '//div[contains(@class,"ess-table-canvas")]')
+            # if table != -1:
+            #     floods, floodsError = self.getWebElement('XPATH', 'div/ess-cell/name-id-cell', visible = False, driver = table[0])
+            #     if floods != -1:
+            #         for flood in floods:
+            #             nameId = flood.get_attribute('textContent').split('\n')
+            #             if nameId[1] == pixelName:
+            #                 floodlightId = nameId[2]
+            #                 url = self.driver.current_url
+            #                 fragment = 'ng_nav/p/%s/a/%s/fl/fle/%s/code'%(marketId,advertiserId,floodlightId)
+            #                 self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
+            #                 if not self.waitChangeURL(url): return '405'
+            #                 code, codeError = self.getWebElement('XPATH', '//div[contains(@class,"mirror-text") and contains(@class,"_ngcontent")]', visible = False)
+            #                 snippet = code[0].get_attribute('textContent') if code != -1 else '401'
+            #                 return snippet
+            #         else:
+            #             return '401'
+            #     else:
+            #         return '403'
                 
-            else:
-                return '401'
+            # else:
+            #     return '401'
         elif platform == 'Taboola Seg' or platform == 'Taboola Conv':
             pass
         else:
@@ -1213,7 +1253,10 @@ class pixelBot:
                 time.sleep(5)
                 webElement, error = self.getWebElement('XPATH','//material-button[contains(@id,"save-button")]')
                 webElement[0].click()
-                self.waitWebElement(webElement[0], condition='class')
+                try:
+                    self.waitWebElement(webElement[0], '//material-button[contains(@id,"save-button")]', condition='class')
+                except StaleElementReferenceException:
+                    pass
                 return True
             else:
                 return False
@@ -1221,6 +1264,15 @@ class pixelBot:
             return False
             
     def existAdvertiserId(self, platform_, advertiserId):
+        """This method validates if an advertiser ID given exist in a specific platform.
+
+        Args:
+            platform_ (str): Name of the platform where to validate an advertiser ID.
+            advertiserId (str): Advertiser ID to validate.
+
+        Returns:
+            boolean: True if the advertiser ID exist in the platform given. False, in other case.
+        """        
         #['Xandr Seg', 'Xandr Conv', 'DV360', 'Taboola', 'minsights']
         if platform_ == 'Xandr Seg' or platform_ == 'Xandr Conv':
             try:
@@ -1239,6 +1291,7 @@ class pixelBot:
                 print('No esta encontrando el buscador')
                 return False
         elif platform_ == 'DV360':
+            if '/'+advertiserId+'/' in self.driver.current_url: return True
             self.setDriver('https://displayvideo.google.com/')
             WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//material-button[contains(@class,"search _ngcontent")]')))[0].click()
             search = WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search by name or ID")]')))[0]
@@ -1302,12 +1355,21 @@ class pixelBot:
         else:
             return False
         
-    """
-        This method return the market IF given a valid Advertiser ID.
-        Return:
-            marketId: String  or -1 if the advertiserId there's not exist.     
-    """
     def getDV360MarketId(self, advertiserId):
+        """This method return the market IF given a valid Advertiser ID.
+
+        Args:
+            advertiserId (str): Advertiser Id in DV360 platform.
+
+        Returns:
+            str or int: If the advertiserId is valid, return a marketId. In other case, return -1.
+        """        
+        if '/'+advertiserId+'/' in self.driver.current_url:
+            try:
+                marketId, advId = re.findall(r'\d+', self.driver.current_url)[:2]
+                return marketId
+            except:
+                pass           
         self.setDriver('https://displayvideo.google.com/')
         WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//material-button[contains(@class,"search _ngcontent")]')))[0].click()
         search = WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@placeholder,"Search by name or ID")]')))[0]
@@ -1593,11 +1655,10 @@ class pixelBot:
             if marketId == -1:
                 return False
             else:
-                return self.existFloodlight_(pixelName, marketId, advertiserId, 10)
+                return self.existFloodlight(pixelName, marketId, advertiserId, 5)
         elif platform == 'Minsights':
             fragment = 'client/%s/activities' % advertiserId
-            self.setDriver(urlparse('https://amerminsights.mplatform.com/')._replace(fragment=fragment).geturl())
-            
+            self.setDriver(urlparse('https://amerminsights.mplatform.com/')._replace(fragment=fragment).geturl()) 
             self.driver.switch_to.default_content()
             iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@class,"external-iframe")]')
             if iframe == -1: return False
@@ -1656,61 +1717,139 @@ class pixelBot:
         else: 
             return False
     
-    def existFloodlight(self, floodName, marketId, advertiserId, timeWait):
-        fragment = 'ng_nav/p/%s/a/%s/fl/events'%(marketId,advertiserId)
-        self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
-        time.sleep(timeWait)
-        try:
-            WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//material-button[contains(@aria-label,"Remove all filters")]')))[0].click()
-            time.sleep(10)
-        except:
-            pass
-        try:
-            floods = WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//div/ess-cell/name-id-cell/a')))
-        except:
-            floods = []
-        if len(floods)>0:
-            for flood in floods:
-                if flood.get_attribute('textContent') == floodName:
-                    return True
-            else:
-                return False
-        else:
-            return False
-        
-    def existFloodlight_(self, floodName, marketId, advertiserId, timeWait):
-        fragment = 'ng_nav/p/%s/a/%s/fl/events'%(marketId,advertiserId)
-        self.setDriver(urlparse(self.driver.current_url)._replace(fragment=fragment).geturl())
+    def getFloodlightId(self, floodName, marketId, advertiserId, timeWait=5):
+        """This method return Floodlight ID if a floodlight activitie exists from a name given.
+
+        Args:
+            floodName (str): Name of the floodlight activity to validate.
+            marketId (str): ID of the market or country.
+            advertiserId (str): Advertiser ID.
+            timeWait (int): Time of waiting that the DV360 platform needs to have ready to go some elements.    
+
+        Returns:
+            boolean or int: Floodlight ID if it exists, -1 in other case.
+        """
+        path = 'ng_nav/p/%s/a/%s/fl/events'%(marketId, advertiserId)
+        if self.driver.current_url != urlparse(self.driver.current_url)._replace(path=path).geturl():
+            self.setDriver(urlparse(self.driver.current_url)._replace(path=path).geturl())
+            loadBar, error = self.getWebElement('XPATH', '//div[contains(@class,"progress-container")]')
+            self.waitChange((By.XPATH,'//div[contains(@class,"progress-container")]'), 'aria-label', 'loading', timeWait)
         webElement, error = self.getWebElement('XPATH','//material-button[contains(@aria-label,"Remove all filters")]', timeout_=1)
         if webElement != -1: webElement[0].click()
-        stop = 0
-        while stop<3:
-            floods, error = self.getWebElement('XPATH','//div/ess-cell/name-id-cell/a')
-            if floods == -1:
-                stop += 1
-            else:
-                time.sleep(timeWait)
-                webElement, error = self.getWebElement('XPATH','//div[contains(text(),"Show rows:")]', timeout_=1)
-                if webElement != 1: self.driver.execute_script("arguments[0].scrollIntoView();", webElement[0])
-                time.sleep(2)  
-                floods2, error = self.getWebElement('XPATH','//div/ess-cell/name-id-cell/a')
-                if len(floods2) > len(floods):
-                    floods = floods2
-                    stop = 3
-                else:
-                    stop += 1
+        self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', timeWait)
+        iconFilter, error = self.getWebElement('XPATH','//material-fab[contains(@aria-label,"Toggle filter")]', timeout_=1)
+        if iconFilter != -1:iconFilter[0].click()
+        filterInput, error = self.getWebElement('XPATH','//input[contains(@aria-label,"Add filter")]', timeout_=1)
+        if filterInput != -1: 
+            filterInput[0].send_keys(floodName+Keys.ENTER) 
+        self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', timeWait)
+        floods, error = self.getWebElement('XPATH','//div/ess-cell/name-id-cell/a')
         floods = [] if floods==-1 else floods 
-        print(len(floods))
         if len(floods)>0:
             for flood in floods:
                 if flood.get_attribute('textContent') == floodName:
+                    url = self.driver.current_url
+                    flood.click()
+                    if self.waitChangeURL(url, 15):
+                        try:
+                            floodId = re.findall(r'\d+', self.driver.current_url)[2]
+                            return floodId
+                        except:
+                            return -1
+                    else:
+                        return -1
+            else:
+                return -1
+        else:
+            return -1
+        
+    def existFloodlight(self, floodName, marketId, advertiserId, timeWait):
+        """This method evaluate if a floodlight activitie exists from a name given.
+
+        Args:
+            floodName (str): Name of the floodlight activity to validate.
+            marketId (str): ID of the market or country.
+            advertiserId (str): Advertiser ID.
+            timeWait (int): Time of waiting that the DV360 platform needs to have ready to go some elements.    
+
+        Returns:
+            boolean: True if the floodlight activity exist. False in other case.
+        """     
+        path = 'ng_nav/p/%s/a/%s/fl/events'%(marketId, advertiserId)
+        if self.driver.current_url != urlparse(self.driver.current_url)._replace(path=path).geturl():
+            self.setDriver(urlparse(self.driver.current_url)._replace(path=path).geturl())
+            loadBar, error = self.getWebElement('XPATH', '//div[contains(@class,"progress-container")]')
+            self.waitChange((By.XPATH,'//div[contains(@class,"progress-container")]'), 'aria-label', 'loading', timeWait)
+        #First Verification
+        floods, error = self.getWebElement('XPATH','//div/ess-cell/name-id-cell/a')
+        floods = [] if floods==-1 else floods 
+        if len(floods)>0:
+            for flood in floods:
+                if flood.get_attribute('textContent') == floodName:
+                    try:
+                        floodRow, error = self.getWebElement('XPATH', 'ancestor::div[contains(@class,"particle-table-row")]', driver=flood)
+                        if floodRow != -1:
+                            status, error = self.getWebElement('XPATH', 'child::ess-cell[@essfield="1.13"]', driver=floodRow[0])
+                            if status != -1 and status[0].text == 'Disabled & archived':
+                                checkFlood, error = self.getWebElement('XPATH', 'child::tools-cell[@class="tools-cell"]', driver=floodRow[0])
+                                if checkFlood != -1:
+                                    checkFlood[0].click()
+                                    actionBtn, error = self.getWebElement('XPATH', '//material-menu[@buttontext="Action"]')
+                                    if actionBtn != -1:
+                                        actionBtn[0].click()
+                                        activate, error = self.getWebElement('XPATH', '//material-select-item/span[contains(@class,"menu-item-label")]')
+                                        if activate != -1:
+                                            activate[0].click()
+                                            self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', timeWait)
+                    except:
+                        print(sys.exc_info()[1])
+                        print(sys.exc_info())
                     return True
             else:
-                print('Caso -2')
+                pass
+        else:
+            pass
+        #End First Verification
+        webElement, error = self.getWebElement('XPATH','//material-button[contains(@aria-label,"Remove all filters")]', timeout_=1)
+        if webElement != -1: 
+            webElement[0].click()
+            self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', timeWait)
+        iconFilter, error = self.getWebElement('XPATH','//material-fab[contains(@aria-label,"Toggle filter")]', timeout_=1)
+        if iconFilter != -1:iconFilter[0].click()
+        filterInput, error = self.getWebElement('XPATH','//input[contains(@aria-label,"Add filter")]', timeout_=1)
+        if filterInput != -1: 
+            filterInput[0].send_keys(floodName+Keys.ENTER) 
+            self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', timeWait)
+        #Second Verification
+        floods, error = self.getWebElement('XPATH','//div/ess-cell/name-id-cell/a')
+        floods = [] if floods==-1 else floods 
+        if len(floods)>0:
+            for flood in floods:
+                if flood.get_attribute('textContent') == floodName:
+                    try:
+                        floodRow, error = self.getWebElement('XPATH', 'ancestor::div[contains(@class,"particle-table-row")]', driver=flood)
+                        if floodRow != -1:
+                            status, error = self.getWebElement('XPATH', 'child::ess-cell[@essfield="1.13"]', driver=floodRow[0])
+                            if status != -1 and status[0].text == 'Disabled & archived':
+                                checkFlood, error = self.getWebElement('XPATH', 'child::tools-cell[@class="tools-cell"]', driver=floodRow[0])
+                                if checkFlood != -1:
+                                    checkFlood[0].click()
+                                    actionBtn, error = self.getWebElement('XPATH', '//material-menu[@buttontext="Action"]')
+                                    if actionBtn != -1:
+                                        actionBtn[0].click()
+                                        activate, error = self.getWebElement('XPATH', '//material-select-item/span[contains(@class,"menu-item-label")]')
+                                        if activate != -1:
+                                            activate[0].click()
+                                            self.waitChange((By.XPATH,'//div[contains(@class,"ess-table-canvas")]'), 'class', 'content-loading', timeWait)
+                    except:
+                        print(sys.exc_info()[1])
+                        print(sys.exc_info())
+                    return True
+            else:
                 return False
         else:
-            print('Caso -1')
             return False
+        #End Second Verification
         
     def tearDown(self):
         if not self.driver == None:
