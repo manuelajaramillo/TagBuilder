@@ -61,6 +61,7 @@ class pixelBot:
         self.viewProgress  = 0
         self.seleniumDelay = 2
         self.waitings      = 6
+        self.seleniumDelay = 30
 
     def setUrl(self, url):
         """This method sets the target URL that pixelBot spyder is working on.
@@ -114,7 +115,7 @@ class pixelBot:
         return webdriver.Firefox(service=service, options = fireFoxOptions)
     
     def setSeleniumDelay(self, delay):
-        """This method sets a time delay to handle the load-times of the webElements.
+        """This method sets a time delay to handle the load-times of the webelements.
 
         Args:
             delay (int): Amount the time in seconds that to implement as delay.
