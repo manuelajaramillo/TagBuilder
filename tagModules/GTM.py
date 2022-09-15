@@ -303,7 +303,7 @@ class GTM:
             Returns:
             Folder: If successful, this method returns a Folders resource in the response body.
         """
-        if name == None: name = namingTools.createFileName('Nexus', 'Strategy')
+        if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
         return self.gtm_service.accounts().containers().workspaces().folders().create(parent=parent, body=body).execute()
@@ -319,7 +319,7 @@ class GTM:
             Returns:
             Folder: If successful, this method returns a Folders resource in the response body.
         """
-        if name == None: name = namingTools.createFileName('Nexus', 'Strategy')
+        if name == None: name = namingTools.createFileName('GroupM', 'Strategy')
         body = {'name': name}
         if notes != None: body.update({'notes': notes})
         try:
@@ -360,6 +360,7 @@ class GTM:
         elif element == 'Template':
             pass
         elif element == 'Folder':
+            print('Entramos a existElement')
             folders =  self.getAllFolders(parent)
             for folder in folders:
                 if name in folder['name']:
@@ -470,7 +471,7 @@ class TimerTrigger(TriggerTemple):
         
     def _init_timer(self, time, var_value, scroll_depth):
         self.addParameter()
-        self.addParameter('interval', 'template', str(int(time)*1000))
+        self.addParameter('interval', 'template', time)
         self.addParameter('limit', 'template', '1')
         self.addFilter('autoEventFilter', 'endsWith', 'Page Hostname', var_value)
         if self.timerType == 'timerScroll':

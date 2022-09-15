@@ -51,20 +51,13 @@ class urlDomains:
         self.__indexSearch = 0
         self.stop          = False
         self.thirdSubPath  = False
+        self.marionette    = False
         self.viewProgress  = 0
         #self.loadPage()
     
     # This function validate if a url has a valid connection to server in the internet
     # Receive a string url
     def validURL(self, url):
-        """This method validates the succeeded request to a domain.
-
-        Args:
-            url (str): Landing to verify.
-
-        Returns:
-            Boolean: True if the http request was succeeded. False in other case.
-        """        
         try:
             if requests.get(url, headers = HEADERS).status_code == 200:
                 return True
@@ -77,6 +70,9 @@ class urlDomains:
                 return False
         except:
             return False
+    
+    def validRootDomain(self):
+        pass
     
     def setScheme(self, scheme):
         """This method establishes the scheme that TagBuilder will use to build the sitemap.
@@ -123,13 +119,8 @@ class urlDomains:
         self.mainSections  = []
         
     def setHeadlessMode(self):
-        """This methods allows us to set-up the marionette of selenium in a hide mode.
-
-        Returns:
-            WebDriver: Marionette of Selenium.
-        """
         fireFoxOptions = webdriver.FirefoxOptions()
-        #fireFoxOptions.headless = True
+        if not self.marionette: fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())
@@ -140,22 +131,14 @@ class urlDomains:
             url = self.url_target
         self.driver.get(url)
         
+    # This method receive urlparse type  element and optional array of urlparse type elements.
+    # If the array is not passed, then the url is searched in the attribute subDomains.
+    # Return True if the url is founded in the array and False in other case.
     def searchURL(self, url, arrayDomains = None):
-        """This method receives a url to validate if there is yet in the set of subdomains of the homepage target.
-
-        Args:
-            url (urlparse): Urlparse object of the url to verify
-            arrayDomains (list, optional): Array list of urls where to verify if a url given exists or not. Defaults to None.
-
-        Returns:
-            Boolean: True if the url given exists in the arrayDomains given or array subdomains of the homepage target.
-        """        
-        urlTemp = url.geturl()[:-1] if url.geturl()[-1] == '/' else url.geturl().replace('.html', '').replace('.php', '')
         if arrayDomains == None:
             arrayDomains = self.subDomains
         for domain in arrayDomains:
-            domainTemp = domain.geturl()[:-1] if domain.geturl()[-1] == '/' else domain.geturl().replace('.html', '').replace('.php', '')
-            if urlTemp == domainTemp:
+            if url.geturl() == domain.geturl():
                 return True
         return False
     
@@ -173,15 +156,23 @@ class urlDomains:
             url_ = url
         else:
             url_ = urlparse(url)
-        if urlparse(self.url_target).netloc != url_.netloc or url_.netloc == '' or url_.scheme != self.scheme:
+        if urlparse(self.url_target).netloc != url_.netloc or url_.scheme != self.scheme:
             return False
         for DP in DISALLOW_PATH:
             if DP in url_.path:
                 return False
         else:
             return True
+        
+    def setMarionette(self, enable):
+        """This method sets the marionette parameter to enable de head of browser.
+
+        Args:
+            enable (boolean): True to enable the marionette. False in other case.
+        """
+        self.marionette = enable
     
-    def addSubDomain(self, subDomain, index = None, type_ = None):
+    def addSudDomain(self, subDomain, index = None, type_ = None):
         """This method adds a subdomain given if it is a valid subdomain of the homepage's
         domain and it isn't adding yet.
 
@@ -193,7 +184,7 @@ class urlDomains:
         """        
         if type_ == None:
             subDomain = urlparse(subDomain)
-        if self.opt_url(subDomain) and not self.searchURL(subDomain):
+        if not self.searchURL(subDomain) and self.opt_url(subDomain):
             if index == None:
                 self.subDomains.append(subDomain)
             else:
@@ -271,7 +262,7 @@ class urlDomains:
                     if '.xml' in sitemap.get_attribute('textContent'):
                         sitemap_urls.append(sitemap.get_attribute('textContent'))
                     else:
-                        self.addSubDomain(sitemap.get_attribute('textContent'))
+                        self.addSudDomain(sitemap.get_attribute('textContent'))
                 if len(sitemap_urls) > 0:
                     for sitemap_url in sitemap_urls:
                         if self.stop: break
@@ -288,9 +279,9 @@ class urlDomains:
                 urls = []
                 urls = self.driver.find_elements(By.TAG_NAME, 'loc')
                 for url in urls:
-                    #self.addSubDomain(sitemap.text)
+                    #self.addSudDomain(sitemap.text)
                     if self.stop: break
-                    self.addSubDomain(url.get_attribute('textContent'))
+                    self.addSudDomain(url.get_attribute('textContent'))
                     print(url.get_attribute('textContent'))
             except:
                 try:
@@ -309,7 +300,7 @@ class urlDomains:
                     if '.xml' in url.get_attribute('textContent'):
                         sitemaps_url.append(url.get_attribute('textContent'))
                     else:
-                        self.addSubDomain(url.get_attribute('textContent'))
+                        self.addSudDomain(url.get_attribute('textContent'))
                 if len(sitemaps_url) > 0:
                     for sitemap in sitemaps_url:
                         if self.stop: break
@@ -417,7 +408,7 @@ class urlDomains:
         """        
         for url in self.allDomains:
             if urlparse(self.url_target).netloc == url.netloc:
-                self.addSubDomain(url, type_ = 1)
+                self.addSudDomain(url, type_ = 1)
             elif len(url.netloc) > 0 and not self.searchURL(url, self.domains):
                 self.domains.append(url)
             if self.stop:
