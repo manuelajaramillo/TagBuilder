@@ -20,7 +20,7 @@ MENU_DEFINITION = (
             'File- &New/Ctrl+N/self.newFile, Save/Ctrl+S/self.save_file, SaveAs/Ctrl+Shift+S/self.save_as, sep, Exit/Ctrl+Q/self.askQuit',
             'Edit- Settings/Ctrl+Z/self.setting, sep, Advanced Settings/Alt+F5/self.offline',
             'View- SiteMap Builder//self.show_siteMapTab, Pixel Creator//self.show_PixelTab, GTM Integrator//self.show_GTMTab',
-            'Help- Documentation/F2/self.documentation, About/F1/self.aboutTagCalc'
+            'Help- Documentation/F2/self.documentation, About/F1/self.aboutTagBuilder'
         )
 
 LOGIN_PAGES     = (
@@ -204,7 +204,7 @@ class FrameWork2D(ttk.Frame):
     def documentation(self):
         subprocess.Popen(p.abspath('resources/documentation/TagBuilder_Manual.pdf'), shell=True)
     
-    def aboutTagCalc(self):
+    def aboutTagBuilder(self):
         pass
     
 class tagFrontEnd(FrameWork2D):
@@ -315,7 +315,7 @@ class tagFrontEnd(FrameWork2D):
     
     def _set_credentials_threaded(self):
         """This function allows to get the DSP's credentials without
-            blocking the main GUI at the start the program TagCalc.
+            blocking the main GUI at the start the program TagBuilder.
 
         Returns:
             None: None
@@ -2099,7 +2099,7 @@ class tagFrontEnd(FrameWork2D):
                 #self.xlsxFile.saveBook()
             self.advertiser_.set(self.advertiser.get())
             self.btn_save.configure(state='active')
-            self.lanchPopUps('Save', 'The TagCalc file has saved!', 'Press "Ok" to exit.')
+            self.lanchPopUps('Save', 'The TagBuilder file has saved!', 'Press "Ok" to exit.')
         else:
             self.lanchPopUps('Fields missing!', 'Check the Container ID and Advertiser ID!', 'Press "Ok" to exit.')
             
@@ -2213,5 +2213,5 @@ if __name__ == '__main__':
     pass
     # root = tk.Tk()
     # tk.Toplevel()
-    # tagCalc = tagFrontEnd(root)
-    # tagCalc.mainloop()
+    # TagBuilder = tagFrontEnd(root)
+    # TagBuilder.mainloop()

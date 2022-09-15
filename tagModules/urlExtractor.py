@@ -82,6 +82,14 @@ class urlDomains:
         """        
         self.scheme = scheme
     
+    def setScheme(self, scheme):
+        """This method establishes the scheme that TagBuilder will use to build the sitemap.
+
+        Args:
+            scheme (string): Type of scheme as https, http or ftp.
+        """        
+        self.scheme = scheme
+    
     def setUrlTarget(self, url):
         self.url_target = url
 
