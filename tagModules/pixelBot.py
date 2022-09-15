@@ -58,6 +58,7 @@ class pixelBot:
         self.startLog      = False
         self.code          = None
         self.approve       = False
+        self.marionette    = False
         self.viewProgress  = 0
         self.seleniumDelay = 2
         self.waitings      = 6
@@ -108,7 +109,7 @@ class pixelBot:
             WebDriver: Marionette of Selenium.
         """
         fireFoxOptions = webdriver.FirefoxOptions()
-        #fireFoxOptions.headless = True
+        if not self.marionette: fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())
@@ -130,6 +131,14 @@ class pixelBot:
             waitings (int): Number of time to wait for a webElement.
         """        
         self.waitings = waitings
+        
+    def setMarionette(self, enable):
+        """This method sets the marionette parameter to enable de head of browser.
+
+        Args:
+            enable (boolean): True to enable the marionette. False in other case.
+        """
+        self.marionette = enable        
     
     def loadPage(self, url = None):
         """This method allow to the marionette load a website.
@@ -1335,23 +1344,7 @@ class pixelBot:
                 else:
                     return False
             else: 
-                return False
-            
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//div[contains(@class,"accountPicker_container__1sNyQ")]')))[0].click()
-            #time.sleep(5)
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"react-select-")]')))[0].clear()
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"react-select-")]')))[0].send_keys(advertiserId)
-            #time.sleep(2)
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"react-select-")]')))[0].send_keys(Keys.ENTER)
-            #time.sleep(3)
-            #try:
-            #    advId = re.findall(r'-?\d+\.?\d*',self.driver.current_url)[0]
-            #    if advId == advertiserId:
-            #        return True
-            #    else:
-            #        return False
-            #except:
-            #    return False     
+                return False   
         else:
             return False
         
@@ -1702,6 +1695,14 @@ class pixelBot:
             #         return False
                             
     def existTaboolaPixel(self, advertiserId):
+        """This method valid if the Universal Taboola Pixel is implemented or not.
+
+        Args:
+            advertiserId (str): Advertiser ID to validate if it has implemented the Taboola Universal Pixel.
+
+        Returns:
+            boolean: True if the universal pixel is implemented.
+        """        
         query = 'accountId=%s' % advertiserId
         self.setDriver(urlparse('https://ads.taboola.com/conversions')._replace(query=query).geturl())
         iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@title,"Tracking")]')

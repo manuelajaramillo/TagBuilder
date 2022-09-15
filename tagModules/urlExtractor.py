@@ -43,6 +43,7 @@ class urlDomains:
         self.fixedPaths    = ''
         self.scheme        = 'https'
         self.searchXML     = True
+        self.marionette    = False
         self.maxLandings   = 50
         self.sizeWord      = 3
         self.maxCategories = 15
@@ -118,6 +119,14 @@ class urlDomains:
     def setFixedPaths(self, fixedPath):
         self.fixedPaths = fixedPath if fixedPath != '/' else ''
         
+    def setMarionette(self, enable):
+        """This method sets the marionette parameter to enable de head of browser.
+
+        Args:
+            enable (boolean): True to enable the marionette. False in other case.
+        """
+        self.marionette = enable
+        
     def getUrlTarget(self):
         return self.url_target
 
@@ -137,7 +146,7 @@ class urlDomains:
             WebDriver: Marionette of Selenium.
         """
         fireFoxOptions = webdriver.FirefoxOptions()
-        #fireFoxOptions.headless = True
+        if not self.marionette: fireFoxOptions.headless = True
         fireFoxOptions.set_preference("general.useragent.override", USER_AGENT)
         #fireFoxOptions.page_load_strategy = 'eager'
         service = FirefoxService(executable_path=GeckoDriverManager().install())

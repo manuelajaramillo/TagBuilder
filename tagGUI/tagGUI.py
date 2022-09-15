@@ -220,6 +220,7 @@ class tagFrontEnd(FrameWork2D):
         self.xlsxFile      = xlsxFile()
         self.pixelBot      = pixelBot()
         self.gtmService    = None
+        self.gtmSharing    = True
         self.gtmAccounts   = []
         self.gtmContainers = []
         self.gtmWorkspaces = []
@@ -247,7 +248,9 @@ class tagFrontEnd(FrameWork2D):
         self.scheme        = tk.StringVar()
         self.builtBy       = tk.StringVar()
         self.searchXML     = tk.BooleanVar()
+        self.programmatic  = tk.BooleanVar()
         self.show_         = tk.BooleanVar()
+        self.marionette    = tk.BooleanVar()
         self.seleniumDelay = tk.IntVar()
         self.waitings      = tk.IntVar()
         self.users         = [tk.StringVar()]
@@ -279,7 +282,9 @@ class tagFrontEnd(FrameWork2D):
         self.maxLandings.set(50)
         self.webDOM.setMaxLandings(self.maxLandings.get())
         self.searchXML.set(False)
+        self.programmatic.set(True)
         self.show_.set(False)
+        self.marionette.set(False)
         self.webDOM.setSearchXML(self.searchXML.get())
         self.viewProgress.set(0)
         self.pixelProgress.set(0)
@@ -486,7 +491,7 @@ class tagFrontEnd(FrameWork2D):
             ttk.Label(parameters_frame, text="Advertiser: ").grid(column=2, row=0, sticky=tk.W)
             tk.Entry(parameters_frame, textvariable = self.advertiser, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=3, row=0, sticky=tk.W)
             ttk.Label(parameters_frame, text='Programmatict: ').grid(column=4, row=0)
-            ttk.Checkbutton(parameters_frame, command=self.set_search, variable=self.searchXML, onvalue=False, offvalue=True).grid(column=5, row=0)
+            ttk.Checkbutton(parameters_frame, command=self.set_programmatic, variable=self.programmatic, onvalue=True, offvalue=False).grid(column=5, row=0)
             #ttk.Label(parameters_frame, text='Advertiser ID: ').grid(column=4, row=0, sticky=tk.W)
             #tk.Entry(parameters_frame, textvariable=self.advertiserId, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=5, row=0, sticky=tk.W)
             
@@ -530,14 +535,6 @@ class tagFrontEnd(FrameWork2D):
             self.platforms['values'] = ['Xandr Seg', 'Xandr Conv', 'DV360', 'Taboola Seg', 'Taboola Conv', 'Minsights']
             self.platforms.set('Xandr Seg')
             self.platforms.grid(column=5, row=2)
-            #ttk.Checkbutton(parameters_frame, command=self.set_search, variable=self.searchXML, onvalue=False, offvalue=True).grid(column=5, row=1)
-            
-            # ttk.Label(parameters_frame, text='Xandr: ').grid(column=0, row=2, sticky=tk.W)
-            # ttk.Checkbutton(parameters_frame, command=self.set_search, variable=self.searchXML, onvalue=False, offvalue=True).grid(column=1, row=2, sticky=tk.W)
-            # ttk.Label(parameters_frame, text='DV360: ').grid(column=2, row=2, sticky=tk.W)
-            # ttk.Checkbutton(parameters_frame, command=self.set_search, variable=self.searchXML, onvalue=False, offvalue=True).grid(column=3, row=2, sticky=tk.W)
-            # ttk.Label(parameters_frame, text='Taboola: ').grid(column=4, row=2, sticky=tk.W)
-            # ttk.Checkbutton(parameters_frame, command=self.set_search, variable=self.searchXML, onvalue=False, offvalue=True).grid(column=6, row=2, sticky=tk.W)
         elif indexTab == 2:
             ttk.Label(parameters_frame, text="T.R Final File: ", style = 'BW.TLabel').grid(column=0, row=0)
             tk.Entry(parameters_frame, width=75, textvariable = self.directoryTRF, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=1, row=0, columnspan=4)
@@ -755,39 +752,6 @@ class tagFrontEnd(FrameWork2D):
         Args:
             advanced (bool, optional): If True, advanced setting window is built. Defaults the basic setting is built.
         """        
-        self.setWindow = tk.Toplevel(self.root)
-        TITLE = PROGRAM_NAME+' Settings'
-        self.setWindow.title(TITLE)
-        self.setWindow.iconbitmap('resources/xaxis32x32.ico')
-        self.setWindow.geometry("600x330+300+100")
-        #General Section
-        general_label_frame = ttk.LabelFrame(self.setWindow, text='General', width=595, height=100)
-        general_frame       = ttk.Frame(general_label_frame)
-        general_label_frame.grid(column=0, row=0)
-        general_label_frame.grid_propagate(0)
-        general_frame.grid(column=0, row=0)
-        #SiteMap Section
-        sitemap_label_frame = ttk.LabelFrame(self.setWindow, text='SiteMap', width=595, height=100)
-        sitemap_frame       = ttk.Frame(sitemap_label_frame)
-        sitemap_label_frame.grid(column=0, row=1)
-        sitemap_label_frame.grid_propagate(0)
-        sitemap_frame.grid(column = 0, row=0)
-        #Pixels Section
-        pixels_label_frame = ttk.LabelFrame(self.setWindow, text='Pixels', width=595, height=100)
-        pixels_frame       = ttk.Frame(pixels_label_frame)
-        pixels_label_frame.grid(column=0, row=2)
-        pixels_label_frame.grid_propagate(0)
-        pixels_frame.grid(column = 0, row=0)
-        #GTM Section
-        # gtm_label_frame = ttk.LabelFrame(self.setWindow, text='GTM', width=595, height=100)
-        # gtm_frame       = ttk.Frame(gtm_label_frame)
-        # gtm_label_frame.grid(column = 0, row=3)
-        # gtm_label_frame.grid_propagate(0)
-        # gtm_frame.grid(column = 0, row=0)
-        
-        #Buttons Section
-        btn_frame       = ttk.Frame(self.setWindow)
-        btn_frame.grid(column = 0, row=4)
                         
         if not advanced:      
             self.setWindow = tk.Toplevel(self.root)
@@ -910,19 +874,19 @@ class tagFrontEnd(FrameWork2D):
             self.setWindow.title(TITLE)
             self.setWindow.iconbitmap('resources/xaxis32x32.ico')
             self.setWindow.geometry("600x330+300+100")
-            #General Section
+            #Additional Platforms Section
             platform_label_frame = ttk.LabelFrame(self.setWindow, text='Additional Platforms', width=595, height=100)
             platform_frame       = ttk.Frame(platform_label_frame)
             platform_label_frame.grid(column=0, row=0)
             platform_label_frame.grid_propagate(0)
             platform_frame.grid(column=0, row=0)
-            #SiteMap Section
+            #Passwords Section
             passwords_label_frame = ttk.LabelFrame(self.setWindow, text='Passwords', width=595, height=100)
             passwords_frame       = ttk.Frame(passwords_label_frame)
             passwords_label_frame.grid(column=0, row=1)
             passwords_label_frame.grid_propagate(0)
             passwords_frame.grid(column = 0, row=0)
-            #Pixels Section
+            #Others Section
             pixels_label_frame = ttk.LabelFrame(self.setWindow, text='Others', width=595, height=100)
             pixels_frame       = ttk.Frame(pixels_label_frame)
             pixels_label_frame.grid(column=0, row=2)
@@ -931,6 +895,33 @@ class tagFrontEnd(FrameWork2D):
             #Buttons Section
             btn_frame       = ttk.Frame(self.setWindow)
             btn_frame.grid(column = 0, row=4)
+            
+            """Additional Platforms Sections"""
+            
+            ttk.Label(platform_frame, text="Programmatic").grid(column =0, row=0, sticky=tk.W)
+            ttk.Label(platform_frame, text="Facebook").grid(column =0, row=1, sticky=tk.W)
+            ttk.Label(platform_frame, text="GA4").grid(column =3, row=0, sticky=tk.W)
+            ttk.Label(platform_frame, text="Ads").grid(column =3, row=1, sticky=tk.W)
+            ttk.Label(platform_frame, text="Twitter").grid(column =6, row=0, sticky=tk.W)
+            ttk.Label(platform_frame, text="Tik-Tok").grid(column =6, row=1, sticky=tk.W)
+            
+            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=2, row=0, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=2, row=1, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=5, row=0, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=5, row=1, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=8, row=0, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=8, row=1, sticky=tk.W)
+            
+            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=1, row=0)
+            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=1, row=1)
+            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=4, row=0)
+            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=4, row=1)
+            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=7, row=0)
+            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=7, row=1)
+            
+            """Others Settings"""
+            ttk.Label(pixels_frame, text='Marionette: ').grid(column=0, row=0, sticky=tk.W)
+            ttk.Checkbutton(pixels_frame, command=self.showMarionette, variable=self.marionette, onvalue=True, offvalue=False).grid(column=1, row=0, sticky=tk.W)
             
             ttk.Button(btn_frame, text='Save', command = self.saveSettings).grid(column=0, row=0)
             self.setExit = ttk.Button(btn_frame, text='exit', command = self.setWindow.destroy, state = 'disable')
@@ -967,7 +958,13 @@ class tagFrontEnd(FrameWork2D):
             self.xandr_passwd.configure(show='*')
             self.dv360_passwd.configure(show='*')
             self.taboo_passwd.configure(show='*') 
-            self.minsi_passwd.configure(show='*')       
+            self.minsi_passwd.configure(show='*') 
+            
+    def showMarionette(self):
+        self.webDOM.setMarionette(self.marionette.get()) 
+        self.pixelBot.setMarionette(self.marionette.get())
+        print(self.webDOM.marionette) 
+        print(self.pixelBot.marionette)      
          
     def addItem(self, parent, itemID, data, numTree=0):
         if numTree == 0:
@@ -1301,6 +1298,7 @@ class tagFrontEnd(FrameWork2D):
         self.tagProgress.set(2)
         self.updateSnipetCodes()
         self.tagProgress.set(3)
+        home = urlparse(self.get_homepage()).hostname if self.get_homepage() != None else 'homepage.com'
         for pixel in self.arrayPixels:
             snippet = ''
             for code in pixel[5:]:
@@ -1308,9 +1306,7 @@ class tagFrontEnd(FrameWork2D):
                     snippet += code
             if snippet == '': continue
             if pixel[0] == 'General':
-                print('Awareness and Branding Pixel')
                 advertiser, trigger, date = pixel[1].split('_')
-                print(advertiser, trigger, date)
                 if re.findall(r'PV$', trigger):
                     if re.findall(r'^HomeUTM', trigger):
                         pass
@@ -1344,6 +1340,7 @@ class tagFrontEnd(FrameWork2D):
                         self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
                         self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
                         self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                        if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
                         if not self.existTag(tags, pixel[1]): 
                             self.gtmTags[-1].setState()
                         else:
@@ -1380,7 +1377,6 @@ class tagFrontEnd(FrameWork2D):
                         self.gtmTags.append(CustomTemple(pixel[1], snippet))
                         self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
                         time_ = re.findall(r'\d+', trigger)[0]
-                        home = urlparse(self.get_homepage()).hostname if self.get_homepage() != None else 'homepage.com'
                         self.gtmTags[-1].setTrigger(TimerTrigger(pixel[1], time_, home))
                         self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
                         if not self.existTag(tags, pixel[1]):
@@ -1410,6 +1406,7 @@ class tagFrontEnd(FrameWork2D):
                 self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
                 self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
                 self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
                 if not self.existTag(tags, pixel[1]): 
                     self.gtmTags[-1].setState()
                 else:
@@ -1565,6 +1562,9 @@ class tagFrontEnd(FrameWork2D):
         
     def set_search(self):
         self.webDOM.setSearchXML(self.searchXML.get())
+        
+    def set_programmatic(self):
+        print(self.programmatic.get())
     
     def set_maxCategories(self, event=None):
         self.maxCategory.set(self.maxCategory.get())
@@ -1752,9 +1752,7 @@ class tagFrontEnd(FrameWork2D):
                                     else:
                                         snippet = self.pixelBot.getSnippetCode(self.advertiserId.get(),pixel[1], self.platforms.get())
                                         self.xandrSeg.append(snippet) if pixelType=='RTG' else self.xandrConv.append(snippet)
-                                        #pixel.append(snippet)
-                                        self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
-                                        #print('El pixel: '+pixel[1]+', existe y no se puede crear!!!')
+                                        #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
                                 self.pixelProgress.set(progress)
                             print('The snippet are: ')
@@ -1788,9 +1786,7 @@ class tagFrontEnd(FrameWork2D):
                                     else:
                                         snippet = self.pixelBot.getSnippetCode(self.advertiserId.get(),pixel[1], self.platforms.get())
                                         self.DV360.append(snippet)
-                                        #pixel.append(snippet)
-                                        self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
-                                        #print('El pixel: '+pixel[1]+', existe y no se puede crear!!!')
+                                        #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
                                 self.pixelProgress.set(progress)
                             print('The snippet are: ')
@@ -1822,7 +1818,7 @@ class tagFrontEnd(FrameWork2D):
                                     else:
                                         event   = True if (pixelType == 'RTG' and pixel[9] in ['Event', 'event', 'EVENT']) or (pixelType == 'CONV' and pixel[10] in ['Event', 'event', 'EVENT']) else False
                                         pathURL = pixel[4] if not event else None
-                                        if self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]): self.lanchPopUps('Pixel Exists!', "The pixel %s already existed!"%pixel[1], 'Press "Ok" to exit.')
+                                        #if self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]): self.lanchPopUps('Pixel Exists!', "The pixel %s already existed!"%pixel[1], 'Press "Ok" to exit.')
                                         snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=2, pixelType=pixelType, event_=event, pathURL=pathURL)
                                         self.taboolaSeg.append(snippet) if pixelType=='RTG' else self.taboolaConv.append(snippet)
                                     progress += step
@@ -1864,9 +1860,7 @@ class tagFrontEnd(FrameWork2D):
                                     else:
                                         snippet = self.pixelBot.getSnippetCode(self.advertiserId.get(),pixel[1], self.platforms.get())
                                         self.minsights.append(snippet)
-                                        #pixel.append(snippet)
-                                        self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
-                                        #print('El pixel: '+pixel[1]+', existe y no se puede crear!!!')
+                                        #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
                                 self.pixelProgress.set(progress)
                             print('The snippet are: ')
@@ -1881,6 +1875,7 @@ class tagFrontEnd(FrameWork2D):
             self.btn_create.configure(state='active')
             self.btn_save_pixels.configure(state='active')
         except:
+            print(sys.exc_info())
             self.lanchPopUps('Error!', str(sys.exc_info()[1]), 'Press "Ok" to exit.')
             self.btn_create.configure(state='active')
         
