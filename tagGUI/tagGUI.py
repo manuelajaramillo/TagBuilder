@@ -962,9 +962,7 @@ class tagFrontEnd(FrameWork2D):
             
     def showMarionette(self):
         self.webDOM.setMarionette(self.marionette.get()) 
-        self.pixelBot.setMarionette(self.marionette.get())
-        print(self.webDOM.marionette) 
-        print(self.pixelBot.marionette)      
+        self.pixelBot.setMarionette(self.marionette.get())     
          
     def addItem(self, parent, itemID, data, numTree=0):
         if numTree == 0:
@@ -1811,12 +1809,17 @@ class tagFrontEnd(FrameWork2D):
                                 step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                                 self.taboolaSeg, self.taboolaConv = ([], self.taboolaConv) if pixelType=='RTG' else (self.taboolaSeg, [])
                                 for pixel in self.arrayPixels:
+                                    pixel[9] = 'NO' if pixel[9] == None else pixel[9]
+                                    pixel[10] = 'NO' if pixel[10] == None else pixel[10]
                                     if pixelType == 'RTG' and pixel[9] in ['NO', 'No', 'no', 'nO', '', None]:
+                                    #if pixelType == 'RTG' and pixel[9].casefold() not in ['url', 'event']:
                                         self.taboolaSeg.append('NO')
+                                    #elif pixelType == 'CONV' and pixel[10].casefold() not in ['url', 'event']:
                                     elif pixelType == 'CONV' and pixel[10] in ['NO', 'No', 'no', 'nO', '', None]:
                                         self.taboolaConv.append('NO')
                                     else:
                                         event   = True if (pixelType == 'RTG' and pixel[9] in ['Event', 'event', 'EVENT']) or (pixelType == 'CONV' and pixel[10] in ['Event', 'event', 'EVENT']) else False
+                                        #event   = True if (pixelType == 'RTG' and pixel[9].casefold() == 'event') or (pixelType == 'CONV' and pixel[10].casefold() == 'event') else False
                                         pathURL = pixel[4] if not event else None
                                         #if self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]): self.lanchPopUps('Pixel Exists!', "The pixel %s already existed!"%pixel[1], 'Press "Ok" to exit.')
                                         snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=2, pixelType=pixelType, event_=event, pathURL=pathURL)
