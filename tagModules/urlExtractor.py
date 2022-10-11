@@ -236,6 +236,11 @@ class urlDomains:
             self.driver = self.setHeadlessMode()
         self.setUrlTarget(url)
         self.loadPage()
+        
+    def resetDriver(self, url, marionette):
+        self.marionette = marionette
+        self.tearDown()
+        self.setDriver(url, True) 
     
     def existGTM(self, url):
         GTMs = []

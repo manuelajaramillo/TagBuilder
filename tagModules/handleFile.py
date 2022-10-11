@@ -5,6 +5,7 @@ is used in GroupM Nexus in the process of implement a measument strategy.
 """
 from openpyxl import Workbook,load_workbook
 from openpyxl.styles import Alignment
+from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
 from datetime import date as dt
 
 from os import path as p
@@ -22,6 +23,10 @@ TRIGGER = [
 SHEET_NAME = 'Tagging Request'
 
 PATH_      = 'resources/formats/TaggingRequest_2021.xlsx'
+
+FONT = {
+    'name':'Calibri', 'size':11, 'bold':False, 'italic':False, 'color':'FF000000'
+    }
 
 class xlsxFile:
     def __init__(self, sheet = 'Tagging Request', PATH=PATH_):
@@ -168,7 +173,7 @@ class xlsxFile:
             colIndex = colIndex + (ord(c)-64)*pow(26, e)
         return colIndex
     
-    def writeCell(self, cell, value, aligment_=['center','center']):
+    def writeCell(self, cell, value, aligment_=['center','center'], font_=FONT):
         """This method write in a cell given the data passed in value parameter.
 
         Args:
@@ -178,6 +183,7 @@ class xlsxFile:
         """        
         self.sheet[cell] = value
         cell = self.sheet[cell]
+        cell.font = Font(name=font_['name'], size=font_['size'], bold=font_['bold'], italic=font_['italic'], color=font_['color'])
         cell.alignment = Alignment(horizontal=aligment_[0], vertical=aligment_[1], wrapText=True)
 
     def getCellDown(self, cell):
@@ -205,6 +211,19 @@ class xlsxFile:
         for i in range(0,len(cell)):
             if cell[i].isdigit():
                 return cell[0:i]+str(int(cell[i:])-1)
+            
+    def nextFreeCell(self, cell, rowCell=True):
+        if rowCell:
+            column = re.findall(r'\D+',cell)[0]
+            row    = int(re.findall(r'\d+',cell)[0])
+            while True:
+                if self.readCell(cell) in [None, '']:
+                    return cell, row, column
+                row += 1
+                cell = column+str(row)
+        else:
+            #We need to implement horizontal searching
+            return cell, None, None
             
     def getLastPath(self, path):
         """This method retrieve the last subpath in a given path.
@@ -274,6 +293,11 @@ class xlsxFile:
         if lastPath == '':
             lastPath = 'Home'
         return advertiser+'_'+lastPath.capitalize()+trigger+'_'+month+year+'.xlsx'
+    
+    def fillCell(self, cell, color):
+        thin = Side(border_style="thin", color="FFFFFF")
+        self.sheet[cell].border = Border(top=thin, left=thin, right=thin, bottom=thin)
+        self.sheet[cell].fill = PatternFill("solid", fgColor=color)
         
             
 if __name__ == '__main__':

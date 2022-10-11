@@ -39,8 +39,24 @@ TABS_DEFINITION = (
     'CAPI'
     )
 
-SPECIAL_CELLS   = (
+SPECIAL_CELLS = (
     'C31', 'D31', 'G31'
+)
+
+COLUMNS = (
+    'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'
+)
+
+PLATFORMS_ADS = (
+    'programmatic', 'tik-tok', 'twitter', 'ga4', 'ads', 'meta'
+)
+
+PLATFORM_COLORS = {
+    'programmatic':'DDDDDD', 'tik-tok':'F8DAE9', 'twitter':'B9D6F3', 'ga4':'F1E8D9', 'ads':'F4C2D7', 'meta':'A1C9F1'
+}
+
+TYPE_MS = (
+    'Branding', 'Conversions', 'E-commerce', 'Traffic'
 )
 
 MONTHS          = [
@@ -128,6 +144,7 @@ class FrameWork2D(ttk.Frame):
             except ValueError:
                 underline = None
             menu.add_command(label=menu_label, underline=underline, accelerator=accelrator_key, command=eval(command_callback))
+            type
             
     # Array of Frames that is in the Notebook: Array of tabs.       
     def build_tabs(self, tabs_definition):
@@ -234,6 +251,7 @@ class tagFrontEnd(FrameWork2D):
         self.taboolaSeg    = []
         self.taboolaConv   = []
         self.gtmTags       = []
+        self.platformAdsList   = []
         self.typeContainer = tk.StringVar()
         self.pathTR        = tk.StringVar()  
         self.directoryTR   = tk.StringVar()
@@ -248,13 +266,15 @@ class tagFrontEnd(FrameWork2D):
         self.scheme        = tk.StringVar()
         self.builtBy       = tk.StringVar()
         self.searchXML     = tk.BooleanVar()
-        self.programmatic  = tk.BooleanVar()
+        self.mss           = tk.BooleanVar()
+        self.show          = tk.BooleanVar()
         self.show_         = tk.BooleanVar()
         self.marionette    = tk.BooleanVar()
         self.seleniumDelay = tk.IntVar()
         self.waitings      = tk.IntVar()
         self.users         = [tk.StringVar()]
         self.passwords     = [tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()]
+        self.other_passwds = [tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()]
         self.maxCategory   = tk.IntVar()
         self.minSizeWord   = tk.IntVar()
         self.maxLandings   = tk.IntVar()
@@ -262,8 +282,15 @@ class tagFrontEnd(FrameWork2D):
         self.pixelProgress = tk.IntVar()
         self.tagProgress   = tk.IntVar()
         self.GTM_ID        = tk.StringVar()
+        self.createAttr()
         self._init_params()
         self._set_credentials_threaded()
+        
+    def createAttr(self):
+        for platform in PLATFORMS_ADS:
+            self.__setattr__('platform%s'%platform.capitalize(), tk.BooleanVar())
+            self.__getattribute__('platform%s'%platform.capitalize()).set(False)
+        self.__getattribute__('platform%s'%PLATFORMS_ADS[0].capitalize()).set(True)
 
     def _init_params(self):
         self.typeContainer.set('')
@@ -276,15 +303,18 @@ class tagFrontEnd(FrameWork2D):
         self.advertiserId.set(self.xlsxFile.readCell('C14'))
         self.fixedPath.set('/')
         self.maxCategory.set(15)
+        self.platformAdsList.append('Programmatic')
         self.webDOM.setMaxCategories(self.maxCategory.get())
         self.minSizeWord.set(3)
         self.webDOM.setSizeWord(self.minSizeWord.get())
         self.maxLandings.set(50)
         self.webDOM.setMaxLandings(self.maxLandings.get())
         self.searchXML.set(False)
-        self.programmatic.set(True)
+        #self.programmatic.set(True)
+        self.show.set(False)
         self.show_.set(False)
         self.marionette.set(False)
+        self.mss.set(False)
         self.webDOM.setSearchXML(self.searchXML.get())
         self.viewProgress.set(0)
         self.pixelProgress.set(0)
@@ -302,6 +332,8 @@ class tagFrontEnd(FrameWork2D):
         self.pixelBot.setSeleniumDelay(self.seleniumDelay.get())
         self.pixelBot.setWaitings(self.waitings.get())
         for passwd in self.passwords:
+            passwd.set("")
+        for passwd in self.other_passwds:
             passwd.set("")
         self.setWindow = tk.Toplevel()
         self.setWindow.destroy()
@@ -337,6 +369,8 @@ class tagFrontEnd(FrameWork2D):
                 credentials = json.load(credentials_file)
                 self.users[0].set(credentials['user'])
                 for passwd, password in zip(credentials['passwords'].values(), self.passwords):
+                    password.set(passwd)
+                for passwd, password in zip(credentials['otherPasswords'].values(), self.other_passwds):
                     password.set(passwd)
         except FileNotFoundError:
             while not self.existAllCredentials() or self.setWindow.winfo_exists():
@@ -433,6 +467,7 @@ class tagFrontEnd(FrameWork2D):
                 self.xlsxFile.setSheet('Home')
                 self.advertiser_.set(self.xlsxFile.readCell('C13'))
                 self.advertiserId.set(self.xlsxFile.readCell('C14'))
+                self.btn_pixels.configure(state='active')
             else:
                 self.lanchPopUps('Invalid File', 'You must choice a valid file!', 'Press "Ok" to exit.')
         except:
@@ -490,10 +525,11 @@ class tagFrontEnd(FrameWork2D):
             tk.Entry(parameters_frame, width=30, textvariable = self.urlAdvertiser, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=1, row=0, sticky=tk.W)
             ttk.Label(parameters_frame, text="Advertiser: ").grid(column=2, row=0, sticky=tk.W)
             tk.Entry(parameters_frame, textvariable = self.advertiser, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=3, row=0, sticky=tk.W)
-            ttk.Label(parameters_frame, text='Programmatict: ').grid(column=4, row=0)
-            ttk.Checkbutton(parameters_frame, command=self.set_programmatic, variable=self.programmatic, onvalue=True, offvalue=False).grid(column=5, row=0)
-            #ttk.Label(parameters_frame, text='Advertiser ID: ').grid(column=4, row=0, sticky=tk.W)
-            #tk.Entry(parameters_frame, textvariable=self.advertiserId, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=5, row=0, sticky=tk.W)
+            ttk.Label(parameters_frame, text='Platform Ads: ').grid(column=4, row=0)
+            self.listPlatformAds = ttk.Combobox(parameters_frame, state='readonly', font=('Arial',8,'italic'))
+            self.listPlatformAds['values'] = self.platformAdsList
+            self.listPlatformAds.set('Programmatic')
+            self.listPlatformAds.grid(column=5, row=0)
             
             ttk.Label(parameters_frame, text="Container ID: ").grid(column=0, row=1, sticky=tk.W)
             tk.Entry(parameters_frame, width=30, textvariable = self.GTM_ID, font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2).grid(column=1, row=1, sticky=tk.W)
@@ -606,7 +642,7 @@ class tagFrontEnd(FrameWork2D):
         pixel_button_frame = ttk.Frame(pixel_label_frame)
         pixel_button_frame.grid(column = 0, row=1)
 
-        self.btn_pixels = ttk.Button(pixel_button_frame, text='Pixels', command = self.pixels_threaded)
+        self.btn_pixels = ttk.Button(pixel_button_frame, text='Pixels', command = self.pixels_threaded, state = 'disable')
         self.btn_pixels.grid(column=0, row=0)
         
         self.btn_create = ttk.Button(pixel_button_frame, text='Create', command = self.createPixels_threaded, state = 'disable')
@@ -880,12 +916,12 @@ class tagFrontEnd(FrameWork2D):
             platform_label_frame.grid(column=0, row=0)
             platform_label_frame.grid_propagate(0)
             platform_frame.grid(column=0, row=0)
-            #Passwords Section
-            passwords_label_frame = ttk.LabelFrame(self.setWindow, text='Passwords', width=595, height=100)
-            passwords_frame       = ttk.Frame(passwords_label_frame)
-            passwords_label_frame.grid(column=0, row=1)
-            passwords_label_frame.grid_propagate(0)
-            passwords_frame.grid(column = 0, row=0)
+            #Measument Strategy Section
+            MS_label_frame = ttk.LabelFrame(self.setWindow, text='Measurement Strategy', width=595, height=100)
+            MS_frame       = ttk.Frame(MS_label_frame)
+            MS_label_frame.grid(column=0, row=1)
+            MS_label_frame.grid_propagate(0)
+            MS_frame.grid(column = 0, row=0)
             #Others Section
             pixels_label_frame = ttk.LabelFrame(self.setWindow, text='Others', width=595, height=100)
             pixels_frame       = ttk.Frame(pixels_label_frame)
@@ -896,34 +932,58 @@ class tagFrontEnd(FrameWork2D):
             btn_frame       = ttk.Frame(self.setWindow)
             btn_frame.grid(column = 0, row=4)
             
-            """Additional Platforms Sections"""
+            """Additional Platforms"""
             
-            ttk.Label(platform_frame, text="Programmatic").grid(column =0, row=0, sticky=tk.W)
-            ttk.Label(platform_frame, text="Facebook").grid(column =0, row=1, sticky=tk.W)
-            ttk.Label(platform_frame, text="GA4").grid(column =3, row=0, sticky=tk.W)
-            ttk.Label(platform_frame, text="Ads").grid(column =3, row=1, sticky=tk.W)
-            ttk.Label(platform_frame, text="Twitter").grid(column =6, row=0, sticky=tk.W)
-            ttk.Label(platform_frame, text="Tik-Tok").grid(column =6, row=1, sticky=tk.W)
+            ttk.Label(platform_frame, text="Tik-Tok: ").grid(column =0, row=0, sticky=tk.W)
+            ttk.Label(platform_frame, text="Twitter: ").grid(column =0, row=1, sticky=tk.W)
+            ttk.Label(platform_frame, text="GA4: ").grid(column =3, row=0, sticky=tk.W)
+            ttk.Label(platform_frame, text="Ads: ").grid(column =3, row=1, sticky=tk.W)
+            ttk.Label(platform_frame, text="Meta: ").grid(column =6, row=0, sticky=tk.W)
+            ttk.Label(platform_frame, text='Show: ').grid(column=6, row=1, sticky=tk.W)
             
-            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=2, row=0, sticky=tk.W)
-            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=2, row=1, sticky=tk.W)
-            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=5, row=0, sticky=tk.W)
-            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=5, row=1, sticky=tk.W)
-            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=8, row=0, sticky=tk.W)
-            ttk.Checkbutton(platform_frame, command=self.show_credentials, variable=self.show_, onvalue=True, offvalue=False).grid(column=8, row=1, sticky=tk.W)
+            self.tiktok_passwd  = tk.Entry(platform_frame, textvariable=self.other_passwds[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17)
+            self.tiktok_passwd.grid(column=1, row=0)
+            self.twitter_passwd = tk.Entry(platform_frame, textvariable=self.other_passwds[3], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17)
+            self.twitter_passwd.grid(column=1, row=1)
+            self.ga4_passwd     = tk.Entry(platform_frame, textvariable=self.other_passwds[1], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17)
+            self.ga4_passwd.grid(column=4, row=0)
+            self.ads_passwd     = tk.Entry(platform_frame, textvariable=self.other_passwds[4], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17)
+            self.ads_passwd.grid(column=4, row=1)
+            self.meta_passwd    = tk.Entry(platform_frame, textvariable=self.other_passwds[2], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17)
+            self.meta_passwd.grid(column=7, row=0)
+            ttk.Checkbutton(platform_frame, command=lambda:self.show_credentials(True), variable=self.show, onvalue=True, offvalue=False).grid(column=7, row=1, sticky=tk.W)
             
-            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=1, row=0)
-            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=1, row=1)
-            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=4, row=0)
-            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=4, row=1)
-            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=7, row=0)
-            tk.Entry(platform_frame, textvariable=self.passwords[0], show='*', font=('Arial',8,'italic'), relief=tk.SUNKEN, borderwidth=2, width=17).grid(column=7, row=1)
+            ttk.Checkbutton(platform_frame, command=lambda:self.set_programmatic(1), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[1].capitalize()), onvalue=True, offvalue=False).grid(column=2, row=0, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=lambda:self.set_programmatic(2), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[2].capitalize()), onvalue=True, offvalue=False).grid(column=2, row=1, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=lambda:self.set_programmatic(3), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()), onvalue=True, offvalue=False).grid(column=5, row=0, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=lambda:self.set_programmatic(4), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[4].capitalize()), onvalue=True, offvalue=False).grid(column=5, row=1, sticky=tk.W)
+            ttk.Checkbutton(platform_frame, command=lambda:self.set_programmatic(5), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[5].capitalize()), onvalue=True, offvalue=False).grid(column=8, row=0, sticky=tk.W)
+            
+            """Measurement Strategy"""
+            ttk.Label(MS_frame, text='Type MS: ').grid(column=0, row=0, sticky=tk.W)
+            ttk.Label(MS_frame, text='Type Tagging: ').grid(column=2, row=0, sticky=tk.W)
+            ttk.Label(MS_frame, text="Unique Domain: ").grid(column =4, row=0, sticky=tk.W)
+            ttk.Label(MS_frame, text="Program.: ").grid(column =0, row=1, sticky=tk.W)
+            
+            MS = ttk.Combobox(MS_frame, state='readonly', font=('Arial',8,'italic'))
+            MS['values'] = TYPE_MS
+            MS.set(TYPE_MS[1])
+            MS.grid(column=1, row=0)
+            taggingTypes = ttk.Combobox(MS_frame, state='readonly', font=('Arial',8,'italic'))
+            taggingTypes['values'] = ['Web', 'Server', 'Hybrid']
+            taggingTypes.set('Web')
+            taggingTypes.grid(column=3, row=0)
+            ttk.Checkbutton(MS_frame, command=lambda:self.set_programmatic(0), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[0].capitalize()), onvalue=True, offvalue=False).grid(column=5, row=0, sticky=tk.W)
+            ttk.Checkbutton(MS_frame, command=lambda:self.set_programmatic(0), variable=self.__getattribute__('platform%s'%PLATFORMS_ADS[0].capitalize()), onvalue=True, offvalue=False).grid(column=1, row=1, sticky=tk.W)
             
             """Others Settings"""
             ttk.Label(pixels_frame, text='Marionette: ').grid(column=0, row=0, sticky=tk.W)
-            ttk.Checkbutton(pixels_frame, command=self.showMarionette, variable=self.marionette, onvalue=True, offvalue=False).grid(column=1, row=0, sticky=tk.W)
+            ttk.Label(pixels_frame, text='Manual Scan: ').grid(column=2, row=0, sticky=tk.W)
             
-            ttk.Button(btn_frame, text='Save', command = self.saveSettings).grid(column=0, row=0)
+            ttk.Checkbutton(pixels_frame, command=self.showMarionette, variable=self.marionette, onvalue=True, offvalue=False).grid(column=1, row=0, sticky=tk.W)
+            ttk.Checkbutton(pixels_frame, command=self.setMSS, variable=self.mss, onvalue=True, offvalue=False).grid(column=3, row=0, sticky=tk.W)
+            
+            ttk.Button(btn_frame, text='Save', command = lambda:self.saveSettings(True)).grid(column=0, row=0)
             self.setExit = ttk.Button(btn_frame, text='exit', command = self.setWindow.destroy, state = 'disable')
             self.setExit.grid(column=1, row=0)
         
@@ -941,26 +1001,51 @@ class tagFrontEnd(FrameWork2D):
     def set_timerLast(self, event):
         pass
     
-    def saveSettings(self):
-        if self.existAllCredentials:
-            self.setExit.configure(state='active')
+    def saveSettings(self, advanced=False):
         credentials = {'user':self.users[0].get(), 'passwords':{'Xandr':self.passwords[0].get(), 'DV360':self.passwords[1].get(), 'Taboola':self.passwords[2].get(), 'Minsights':self.passwords[3].get()}}
-        with open(PLATFORM_CREDENTIALS, "w") as credentials_file:
-            json.dump(credentials, credentials_file)  
-            
-    def show_credentials(self):
-        if self.show_.get():
-            self.xandr_passwd.configure(show='')
-            self.dv360_passwd.configure(show='')
-            self.taboo_passwd.configure(show='')
-            self.minsi_passwd.configure(show='')
+        credentials['otherPasswords'] = {'TikTok':self.other_passwds[0].get(), 'GA4':self.other_passwds[1].get(), 'Meta':self.other_passwds[2].get(), 'Twitter':self.other_passwds[3].get(), 'Ads':self.other_passwds[4].get()}
+        if not advanced:
+            if self.existAllCredentials:
+                self.setExit.configure(state='active')  
         else:
-            self.xandr_passwd.configure(show='*')
-            self.dv360_passwd.configure(show='*')
-            self.taboo_passwd.configure(show='*') 
-            self.minsi_passwd.configure(show='*') 
+            self.setExit.configure(state='active')
+        with open(PLATFORM_CREDENTIALS, "w") as credentials_file:
+            json.dump(credentials, credentials_file)
+            
+    def show_credentials(self, advanced=False):
+        if not advanced:
+            if self.show_.get():
+                self.xandr_passwd.configure(show='')
+                self.dv360_passwd.configure(show='')
+                self.taboo_passwd.configure(show='')
+                self.minsi_passwd.configure(show='')
+            else:
+                self.xandr_passwd.configure(show='*')
+                self.dv360_passwd.configure(show='*')
+                self.taboo_passwd.configure(show='*') 
+                self.minsi_passwd.configure(show='*') 
+        else:
+            if self.show.get():
+                self.tiktok_passwd.configure(show='')
+                self.twitter_passwd.configure(show='')
+                self.ga4_passwd.configure(show='')
+                self.ads_passwd.configure(show='')
+                self.meta_passwd.configure(show='') 
+            else:   
+                self.tiktok_passwd.configure(show='*')
+                self.twitter_passwd.configure(show='*')
+                self.ga4_passwd.configure(show='*')
+                self.ads_passwd.configure(show='*')
+                self.meta_passwd.configure(show='*')
+                
+    def setMSS(self):
+        if self.mss.get():
+            self.marionette.set(True)
+            self.showMarionette()
             
     def showMarionette(self):
+        if not self.marionette.get():
+            self.mss.set(False)
         self.webDOM.setMarionette(self.marionette.get()) 
         self.pixelBot.setMarionette(self.marionette.get())     
          
@@ -1029,6 +1114,13 @@ class tagFrontEnd(FrameWork2D):
                 index_section+=1
                 
     def addItemTreeViewII(self, arrayPixels, numTree=1):
+        """This method allows us to build the category tree of the pixels that we need in the Measurement
+           Strategy to the data visualization of the functionalities of Pixel Creator and GTM integrator.
+
+        Args:
+            arrayPixels (_type_): _description_
+            numTree (int, optional): _description_. Defaults to 1.
+        """        
         categories = []
         idd = 0
         self.deleteItemsTreeView(numTree)
@@ -1066,9 +1158,13 @@ class tagFrontEnd(FrameWork2D):
     def createSectionSheets(self, mainSections):
         self.xlsxFile.setSheet('Sections')
         self.xlsxFile.writeCell('C13', self.advertiser.get(), ['left','center'])
-        self.xlsxFile.writeCell('C31', 'Section')
-        self.xlsxFile.writeCell('D31', 'Page View')
-        self.xlsxFile.writeCell('G31', 'u/p')
+        cell = 'C31'
+        for platform in PLATFORMS_ADS:
+            if self.__getattribute__('platform%s'%platform.capitalize()).get():
+                cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                self.xlsxFile.writeCell('C'+str(row), 'Section')
+                self.xlsxFile.writeCell('D'+str(row), 'Page View')
+                self.xlsxFile.writeCell('G'+str(row), 'u/p')
         for mainSection in mainSections:
             #mainSection_ = mainSection.replace('/','-')
             mainSection_ = self.fitNameSection(mainSection)
@@ -1091,8 +1187,13 @@ class tagFrontEnd(FrameWork2D):
             if len(nameSection)>1:
                 nameSection = nameSection[0]+'-'+nameSection[1]
             else:
-                nameSection = nameSection[0]
-            self.xlsxFile.writeCell('E31', self.xlsxFile.getNameSection(self.advertiser.get(), nameSection))
+                nameSection = nameSection[0]    
+            cell = 'E31'
+            for platform in PLATFORMS_ADS:
+                if self.__getattribute__('platform%s'%platform.capitalize()).get():
+                    cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                    platform = '' if platform == 'programmatic' else platform
+                    self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), nameSection+platform.capitalize()))
             self.xlsxFile.loadList(dataSection, 'F30')
             index_sheet += 1
         self.xlsxFile.setSheet(self.xlsxFile.book.sheetnames[2]) #before 1
@@ -1226,7 +1327,7 @@ class tagFrontEnd(FrameWork2D):
         if self.validTRFile('Final'):
             self.addItemTreeViewII(self.getArrayPixels(), 2)
             self.btn_gtmConnect.configure(state='active')
-            self.lanchPopUps('Extracted!', 'The pixels had read from TR!', 'Press "Ok" to exit.')
+            self.lanchPopUps('Extracted!', 'The Tags had read from TR!', 'Press "Ok" to exit.')
         else:
             self.lanchPopUps('Invalid File', 'You must choice a valid file!', 'Press "Ok" to exit.')
         self.btn_loadTags.configure(state='active')
@@ -1303,7 +1404,7 @@ class tagFrontEnd(FrameWork2D):
                 if code != None and code.casefold() not in ['si', 'no', '', 'url', 'event']:
                     snippet += code
             if snippet == '': continue
-            if pixel[0] == 'General':
+            if pixel[0] == 'General' or pixel[0] == 'Funnel':
                 advertiser, trigger, date = pixel[1].split('_')
                 if re.findall(r'PV$', trigger):
                     if re.findall(r'^HomeUTM', trigger):
@@ -1392,12 +1493,12 @@ class tagFrontEnd(FrameWork2D):
                 else:
                     print('Pixel saltado: ', pixel[1])
                     continue
-            elif pixel[0] == 'Funnel':
-                print('Awareness and Branding Pixel')
-                if self.existTag(tags, pixel[1]): 
-                    print('This pixel, %s already exists! We need to update the temple'%pixel[1])
-                else:
-                    print('This pixel, %s do not exist, we need to create it!'%pixel[1])
+            # elif pixel[0] == 'Funnel':
+            #     print('Awareness and Branding Pixel')
+            #     if self.existTag(tags, pixel[1]): 
+            #         print('This pixel, %s already exists! We need to update the temple'%pixel[1])
+            #     else:
+            #         print('This pixel, %s do not exist, we need to create it!'%pixel[1])
             elif 'Otros' in pixel[0]:
                 otherID = self.getTagId(tags, pixel[1]) if self.existTag(tags, pixel[1]) else otherID
             else:
@@ -1561,8 +1662,19 @@ class tagFrontEnd(FrameWork2D):
     def set_search(self):
         self.webDOM.setSearchXML(self.searchXML.get())
         
-    def set_programmatic(self):
-        print(self.programmatic.get())
+    def set_programmatic(self, platform):
+        optionPlatform = ''
+        for platform_ in PLATFORMS_ADS:
+            if self.__getattribute__('platform%s'%platform_.capitalize()).get(): optionPlatform += platform_.capitalize()+'/'
+        if optionPlatform == '':
+            optionPlatform = 'Programmatic'
+            self.__getattribute__('platform%s'%PLATFORMS_ADS[0].capitalize()).set(True)
+            self.platformAdsList = [optionPlatform]
+        else:
+            optionPlatform = optionPlatform[:-1]
+            self.platformAdsList = ['Programmatic', optionPlatform]
+        self.listPlatformAds['values'] = self.platformAdsList
+        self.listPlatformAds.set(optionPlatform)
     
     def set_maxCategories(self, event=None):
         self.maxCategory.set(self.maxCategory.get())
@@ -1646,9 +1758,19 @@ class tagFrontEnd(FrameWork2D):
     
     def find(self):
         if self.validURL(self.urlAdvertiser.get()):
+            subDomains = []
             if self.builtBy.get() != 'path': return self.lanchPopUps('Building!', "This Building Sitemap way hasn't implemented yet!", 'Press "Ok" to exit.')
             self.btn_sections.configure(state='disable')
             self.btn_save.configure(state='disable')
+            if self.mss.get():
+                self.marionette.set(True)
+                self.showMarionette()
+                self.webDOM.resetDriver(self.urlAdvertiser.get(), True)
+                url = self.webDOM.driver.current_url
+                while self.mss.get():
+                    if url != self.webDOM.driver.current_url and self.webDOM.driver.current_url not in subDomains:
+                        subDomains.append(self.webDOM.driver.current_url)
+                        url = self.webDOM.driver.current_url    
             self.webDOM.setScheme(self.scheme.get())
             self.webDOM.viewProgress = 1
             self.updateProgress_threaded()
@@ -1664,6 +1786,8 @@ class tagFrontEnd(FrameWork2D):
             fixedPath = self.fixedPath.get() if int(self.fixedPaths.get())>0 else None
             exists_url, exists_sitemap = self.webDOM.buildSiteMap(self.urlAdvertiser.get(), fixedPath)
             if exists_url:
+                for url in subDomains:
+                    self.webDOM.addSubDomain(url)
                 if exists_sitemap and len(self.webDOM.subDomains)>0:
                     self.lanchPopUps('Landings', 'The process of find landings has finished!', 'Press "Ok" to exit.')
                 else:
@@ -2137,55 +2261,85 @@ class tagFrontEnd(FrameWork2D):
         return pixels
     
     def save(self):
-        if self.validAdvertiserID() and self.validGTMID():
-            self.btn_save.configure(state='disable')
-            self.xlsxFile.setPATH(self.pathTR.get())
-            self.xlsxFile.setBook()
-            self.xlsxFile.setSheet()
-            self.xlsxFile.writeCell('C13', self.advertiser.get(), ['left','center'])
-            self.xlsxFile.writeCell('C23', self.GTM_ID.get(), ['left','center'])
-            deployGTM = 'No' if 'GTM-XXXXXXX' in self.GTM_ID.get() else 'Si'
-            self.xlsxFile.writeCell('C21', deployGTM, ['left','center'])
-            if len(self.webDOM.mainSections)>1: 
-                self.createSectionSheets(self.webDOM.mainSections[1:])
-            else:
-                self.xlsxFile.setSheet('Tagging Request')
-                self.xlsxFile.sheet = self.xlsxFile.book['Tagging Request']
-                self.xlsxFile.sheet.title = 'Home'
-            self.xlsxFile.setSheet('Home')
-            self.xlsxFile.writeCell('C31', 'Home')
-            self.xlsxFile.writeCell('D31', 'Page View')
-            self.xlsxFile.writeCell('G31', 'u')
-            self.xlsxFile.writeCell('E31', self.xlsxFile.getNameSection(self.advertiser.get(), 'Home'))
-            self.xlsxFile.writeCell('C32', 'Section')
-            self.xlsxFile.writeCell('D32', 'Page View')
-            self.xlsxFile.writeCell('F32', 'AllPages')
-            self.xlsxFile.writeCell('G32', 'u/p')
-            self.xlsxFile.writeCell('E32', self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages','PV'))
-            self.xlsxFile.writeCell('C33', 'Section')
-            self.xlsxFile.writeCell('D33', 'Scroll')
-            self.xlsxFile.writeCell('F33', 'AllPages')
-            self.xlsxFile.writeCell('G33', 'u/p')
-            self.xlsxFile.writeCell('E33', self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages','Scroll%s'%self.scrollDeep.get()))
-            self.xlsxFile.writeCell('C34', 'Section')
-            self.xlsxFile.writeCell('D34', 'Timer')
-            self.xlsxFile.writeCell('F34', 'AllPages')
-            self.xlsxFile.writeCell('G34', 'u/p')
-            self.xlsxFile.writeCell('E34', self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages','T%sss'%self.timerLast.get()))
-            if len(self.webDOM.arraySections)>0: self.loadData(self.webDOM.arraySections)
-            self.xlsxFile.book.remove(self.xlsxFile.book['Sections'])
-            directory = filedialog.askdirectory()
-            if len(directory) > 0:
-                self.directoryTR.set(self.xlsxFile.saveBook(directory))
-            else:
-                self.directoryTR.set(self.xlsxFile.saveBook())
-                #self.xlsxFile.saveBook()
-            self.advertiser_.set(self.advertiser.get())
-            self.btn_save.configure(state='active')
-            self.lanchPopUps('Save', 'The TagBuilder file has saved!', 'Press "Ok" to exit.')
+        if self.validGTMID():
+            try:
+                self.btn_save.configure(state='disable')
+                self.xlsxFile.setPATH(self.pathTR.get())
+                self.xlsxFile.setBook()
+                self.xlsxFile.setSheet()
+                self.xlsxFile.writeCell('C13', self.advertiser.get(), ['left','center'])
+                self.xlsxFile.writeCell('C23', self.GTM_ID.get(), ['left','center'])
+                deployGTM = 'No' if 'GTM-XXXXXXX' in self.GTM_ID.get() else 'Si'
+                self.xlsxFile.writeCell('C21', deployGTM, ['left','center'])
+                if len(self.webDOM.mainSections)>1: 
+                    self.createSectionSheets(self.webDOM.mainSections[1:])
+                else:
+                    self.xlsxFile.setSheet('Tagging Request')
+                    self.xlsxFile.sheet = self.xlsxFile.book['Tagging Request']
+                    self.xlsxFile.sheet.title = 'Home'
+                self.xlsxFile.setSheet('Home')
+                cell = 'E31'
+                for platform in PLATFORMS_ADS:
+                    if self.__getattribute__('platform%s'%platform.capitalize()).get():
+                        platform = '' if platform == 'programmatic' else platform
+                        cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        if cell != 'E31':
+                            self.xlsxFile.sheet.merge_cells('B%d:B%d'%(row,row+1))
+                            self.xlsxFile.sheet.merge_cells('B%d:B%d'%(row+2,row+3))
+                            styleFont = {'name':'Calibri', 'size':11, 'bold':True, 'italic':True, 'color':'FF000000'}
+                            self.xlsxFile.writeCell('B'+str(row), 'Awareness', font_=styleFont)
+                            self.xlsxFile.writeCell('B'+str(row+2), 'Consideration', font_=styleFont)
+                            self.xlsxFile.fillCell('B'+str(row), PLATFORM_COLORS[platform])
+                            self.xlsxFile.fillCell('B'+str(row+2), PLATFORM_COLORS[platform])
+                            for r in range(4):
+                                for c in COLUMNS:
+                                    self.xlsxFile.fillCell(c+str(row+r), PLATFORM_COLORS[platform])
+                        self.xlsxFile.writeCell('C'+str(row), 'Home')
+                        self.xlsxFile.writeCell('G'+str(row), 'u')
+                        self.xlsxFile.writeCell('D'+str(row), 'Page View')
+                        self.xlsxFile.writeCell('F'+str(row), self.urlAdvertiser.get())
+                        self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'Home'+platform.capitalize()))
+                        cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        self.xlsxFile.writeCell('C'+str(row), 'Section')
+                        self.xlsxFile.writeCell('D'+str(row), 'Page View')
+                        self.xlsxFile.writeCell('F'+str(row), 'AllPages')
+                        self.xlsxFile.writeCell('G'+str(row), 'u/p')
+                        self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages'+platform.capitalize(),'PV'))
+                        cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        self.xlsxFile.writeCell('C'+str(row), 'Section')
+                        self.xlsxFile.writeCell('D'+str(row), 'Scroll')
+                        self.xlsxFile.writeCell('F'+str(row), 'AllPages')
+                        self.xlsxFile.writeCell('G'+str(row), 'u/p')
+                        self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages'+platform.capitalize(),'Scroll%s'%self.scrollDeep.get()))
+                        cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        self.xlsxFile.writeCell('C'+str(row), 'Section')
+                        self.xlsxFile.writeCell('D'+str(row), 'Timer')
+                        self.xlsxFile.writeCell('F'+str(row), 'AllPages')
+                        self.xlsxFile.writeCell('G'+str(row), 'u/p')
+                        self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages'+platform.capitalize(),'T%sss'%self.timerLast.get()))
+                if len(self.webDOM.arraySections)>0: self.loadData(self.webDOM.arraySections)
+                self.xlsxFile.book.remove(self.xlsxFile.book['Sections'])
+                directory = filedialog.askdirectory()
+                if len(directory) > 0:
+                    self.directoryTR.set(self.xlsxFile.saveBook(directory))
+                else:
+                    self.directoryTR.set(self.xlsxFile.saveBook())
+                    #self.xlsxFile.saveBook()
+                self.advertiser_.set(self.advertiser.get())
+                self.btn_save.configure(state='active')
+                self.lanchPopUps('Save', 'The TagBuilder file has saved!', 'Press "Ok" to exit.')
+            except PermissionError:
+                self.lanchPopUps('PermissionError!', "The TR file is opened or don't\n have permission to save.", 'Press "Ok" to exit.')
+                print(sys.exc_info())
+            except:
+                print(sys.exc_info())
+                self.lanchPopUps('Error!', str(sys.exc_info()[1]), 'Press "Ok" to exit.')
         else:
-            self.lanchPopUps('Fields missing!', 'Check the Container ID and Advertiser ID!', 'Press "Ok" to exit.')
+            self.lanchPopUps('Fields missing!', 'Check the Container ID and Advertiser Name!', 'Press "Ok" to exit.')
             
+    def writeBasicPixels(cell, platform=''):
+        row = int(re.findall(r'\d+',cell)[0])
+    
     def savePixels(self):
         self.btn_save_pixels.configure(state='disable')
         snippet_Arrays = {'Xandr Seg': self.xandrSeg, 'Xandr Conv': self.xandrConv, 'DV360': self.DV360, 'Minsights': self.minsights, 'Taboola Seg': self.taboolaSeg, 'Taboola Conv': self.taboolaConv}
@@ -2193,34 +2347,47 @@ class tagFrontEnd(FrameWork2D):
             flat, cell, pixelsHome = True, 'E31', 1
             self.xlsxFile.setSheet('Home')
             if self.xlsxFile.readCell(cell) in [None, '']: flat, pixelsHome = False, 0
-            print(flat)
             while flat:
                 cell, value = self.xlsxFile.readNextCell(cell)
                 flat, pixelsHome = (False, pixelsHome) if value in [None, ''] else (True, pixelsHome+1)
             print('El numero de pixeles en sheet home es: ', pixelsHome)
+            flat, cell, pixelsFunnel = True, 'E31', pixelsHome+1
+            self.xlsxFile.setSheet('Funnel')
+            if self.xlsxFile.readCell(cell) in [None, '']: flat, pixelsFunnel = False, pixelsHome
+            print("PixelsFunnel", pixelsFunnel)
+            while flat:
+                cell, value = self.xlsxFile.readNextCell(cell)
+                flat, pixelsFunnel = (False, pixelsFunnel) if value in [None, ''] else (True, pixelsFunnel+1)
+            print('El numero de pixeles en sheet Funnel es: ', pixelsFunnel-pixelsHome)
+            
             for DSP in snippet_Arrays:
                 index, indexSection = 0, 4
                 print('Pixel Setting: ',snippet_Arrays[DSP])    
                 for snippet in snippet_Arrays[DSP]:
-                    if index<pixelsHome:
-                        self.xlsxFile.setSheet('Home')
+                    if index<pixelsHome or index<pixelsFunnel:
+                        if index<pixelsHome: 
+                            self.xlsxFile.setSheet('Home')
+                            index_ = index
+                        else: 
+                            self.xlsxFile.setSheet('Funnel')
+                            index_ = index-pixelsHome 
                         if DSP == 'Xandr Seg': 
-                            cell = 'J3%s'%str(index+1)
+                            cell = 'J3%s'%str(index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'Xandr Conv': 
-                            cell = 'K3%s'%str(index+1)
+                            cell = 'K3%s'%str(index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'DV360': 
-                            cell = 'L3%s'%str(index+1)
+                            cell = 'L3%s'%str(index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'Minsights': 
-                            cell = 'I3%s'%str(index+1)
+                            cell = 'I3%s'%str(index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'Taboola Seg': 
-                            cell = 'M3%s'%str(index+1)
+                            cell = 'M3%s'%str(index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         else: 
-                            cell = 'N3%s'%str(index+1)
+                            cell = 'N3%s'%str(index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                     else:
                         self.xlsxFile.setSheet(self.xlsxFile.book.sheetnames[indexSection])
@@ -2267,11 +2434,15 @@ class tagFrontEnd(FrameWork2D):
         for pixel in self.arrayPixels:
             variables = pixel[3].split('/')
             for variable in variables:
+                variable_ = ''
+                if variable == 'u': variable_ = 'Page URL'
+                elif variable == 'p': variable_ = 'Page Path'
+                else: variable_ = variable
                 varDV = '[%s]'%variable
                 varMS = '[REPLACE THIS WITH YOUR MACRO AND PASS IN %s]'%variable
                 for code, index in zip(pixel[5:], range(5,len(pixel))):
                     if code != None:
-                        code_ = code.replace(varDV, '{{%s}}'%variable).replace(varMS, '{{%s}}'%variable) 
+                        code_ = code.replace(varDV, '{{%s}}'%variable_).replace(varMS, '{{%s}}'%variable_) 
                         self.arrayPixels[self.arrayPixels.index(pixel)][index] = code_   
         
     def lanchPopUps(self, title_, message_, detail_):

@@ -85,7 +85,12 @@ class pixelBot:
         self.driver.maximize_window()
         self.setUrl(url)
         self.loadPage()
-
+        
+    def resetDriver(self, url, headless):
+        self.marionette = headless
+        self.tearDown()
+        self.setDriver(url)        
+        
     def getUrl(self):
         """This method retrieves the URL target that PixelBot is working on.
 
@@ -1806,6 +1811,7 @@ class pixelBot:
         
     def tearDown(self):
         if not self.driver == None:
+            self.set = False
             self.driver.quit()
 
 if __name__ == '__main__':
