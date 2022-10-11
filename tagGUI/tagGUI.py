@@ -51,6 +51,10 @@ PLATFORMS_ADS = (
     'programmatic', 'tik-tok', 'twitter', 'ga4', 'ads', 'meta'
 )
 
+PLATFORMS_BASE = (
+    'Xandr Seg', 'Xandr Conv', 'DV360', 'Taboola Seg', 'Taboola Conv', 'Minsights'
+)
+
 PLATFORM_COLORS = {
     'programmatic':'DDDDDD', 'tik-tok':'F8DAE9', 'twitter':'B9D6F3', 'ga4':'F1E8D9', 'ads':'F4C2D7', 'meta':'A1C9F1'
 }
@@ -58,6 +62,8 @@ PLATFORM_COLORS = {
 TYPE_MS = (
     'Branding', 'Conversions', 'E-commerce', 'Traffic'
 )
+
+PIXEL_SETTING_COLUMNS = [4, 14]
 
 MONTHS          = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -251,6 +257,7 @@ class tagFrontEnd(FrameWork2D):
         self.taboolaSeg    = []
         self.taboolaConv   = []
         self.gtmTags       = []
+        self.platformList  = []
         self.platformAdsList   = []
         self.typeContainer = tk.StringVar()
         self.pathTR        = tk.StringVar()  
@@ -331,6 +338,8 @@ class tagFrontEnd(FrameWork2D):
         self.users[0].set("")
         self.pixelBot.setSeleniumDelay(self.seleniumDelay.get())
         self.pixelBot.setWaitings(self.waitings.get())
+        for platform in PLATFORMS_BASE:
+            self.platformList.append(platform)
         for passwd in self.passwords:
             passwd.set("")
         for passwd in self.other_passwds:
@@ -1670,11 +1679,22 @@ class tagFrontEnd(FrameWork2D):
             optionPlatform = 'Programmatic'
             self.__getattribute__('platform%s'%PLATFORMS_ADS[0].capitalize()).set(True)
             self.platformAdsList = [optionPlatform]
+            self.platformList = PLATFORMS_BASE
         else:
             optionPlatform = optionPlatform[:-1]
-            self.platformAdsList = ['Programmatic', optionPlatform]
+            if self.__getattribute__('platform%s'%PLATFORMS_ADS[0].capitalize()).get():  self.platformAdsList = ['Programmatic', optionPlatform]
+            else: self.platformAdsList = [optionPlatform]
+            self.platformList = []
+            for platform in optionPlatform.split('/'):
+                if platform == 'Programmatic':
+                    for platformBase in PLATFORMS_BASE:
+                        self.platformList.append(platformBase)
+                else:
+                    self.platformList.append(platform)
         self.listPlatformAds['values'] = self.platformAdsList
+        self.platforms['values'] = self.platformList
         self.listPlatformAds.set(optionPlatform)
+        self.platforms.set(self.platformList[0])
     
     def set_maxCategories(self, event=None):
         self.maxCategory.set(self.maxCategory.get())
@@ -1963,6 +1983,8 @@ class tagFrontEnd(FrameWork2D):
                     else:
                         self.lanchPopUps('Taboola login failed!', 'Check your credentials, please.', 'Press "Ok" to exit.')
                     #self.createPixel(self.platforms.get(), 'AllPagesTest', None)
+                elif self.platforms.get().casefold() in PLATFORMS_ADS:
+                    self.lanchPopUps('Not Implemented!', 'You have been selected a platform in process to be implemehted.', 'Press "Ok" to exit.')
                 else:
                     self.pixelProgress.set(0)
                     if self.logInPlatform(LOGIN_PAGES[3], self.users[0].get(), self.passwords[3].get()):
@@ -2172,7 +2194,7 @@ class tagFrontEnd(FrameWork2D):
         except:
             return False
     
-    def getArrayPixels(self):
+    def getArrayPixels(self, starColumn=PIXEL_SETTING_COLUMNS[0], endColumn=PIXEL_SETTING_COLUMNS[1]):
         """This function reads the TR file and get the differents pixels that we need to implement.
 
         Returns:
@@ -2181,17 +2203,18 @@ class tagFrontEnd(FrameWork2D):
         pixels = []
         for sheetname in self.xlsxFile.book.sheetnames:
             self.xlsxFile.setSheet(sheetname)
+            flat, cell, indexes = True, 'E31', [1, 0, 3, 2, 5, 6, 7, 8, 9, 10]
+            if self.xlsxFile.readCell(cell) in [None, '']: flat = False
             if sheetname in ['Concept Tagging Request ', 'Hoja1', 'Listas']:
                 continue
-            if sheetname == 'Home':
-                flat, cell, indexes = True, 'E31', [1, 0, 3, 2, 5, 6, 7, 8, 9, 10]
-                if self.xlsxFile.readCell(cell) in [None, '']: flat = False
+            if sheetname == 'Home' or sheetname == 'Funnel':
                 while flat:
                     dataPixel = []
                     pixels.append([])
-                    pixels[-1].insert(0,'General')
+                    #pixels[-1].insert(0,'General')
+                    pixels[-1].insert(0, sheetname)
                     row = int(re.findall(r'\d+', cell)[0])
-                    table = self.xlsxFile.sheet._cells_by_row(4, row, 14, row)
+                    table = self.xlsxFile.sheet._cells_by_row(starColumn, row, endColumn, row)
                     for r in table:
                         for c in r:
                             dataPixel.append(c.value)
@@ -2206,58 +2229,57 @@ class tagFrontEnd(FrameWork2D):
                                 pixels[-1].append(None)
                         else:
                             pixels[-1].append(dataPixel[index])
-                        #pixels[-1].append(dataPixel[index])
                     cell, value = self.xlsxFile.readNextCell(cell)
                     if value in [None, '']: flat = False
-            elif sheetname == 'Funnel':
-                flat, cell, indexes = True, 'E31', [1, 0, 3, 2, 5, 6, 7, 8, 9, 10]
-                if self.xlsxFile.readCell(cell) in [None, '']: flat = False
+            # elif sheetname == 'Funnel':
+            #     while flat:
+            #         dataPixel = []
+            #         pixels.append([])
+            #         pixels[-1].insert(0,'Funnel')
+            #         row = int(re.findall(r'\d+', cell)[0])
+            #         table = self.xlsxFile.sheet._cells_by_row(4, row, 14, row)
+            #         for r in table:
+            #             for c in r:
+            #                 dataPixel.append(c.value)
+            #         for index in indexes:
+            #             if index == 2 and 'PV_' in dataPixel[1] and not 'Home' in dataPixel[1] and not 'AllPages' in dataPixel[1]:
+            #                 path_ = urlparse(dataPixel[2]).path.split('/')
+            #                 self.webDOM.deleteItemList(path_, '')
+            #                 self.webDOM.deleteSubPaths(path_)
+            #                 try:
+            #                     pixels[-1].append('/'+path_[0])
+            #                 except:
+            #                     pixels[-1].append(None)
+            #             else:
+            #                 pixels[-1].append(dataPixel[index])
+            #         cell, value = self.xlsxFile.readNextCell(cell)
+            #         if value in [None, '']: flat = False
+            else:
                 while flat:
                     dataPixel = []
                     pixels.append([])
-                    pixels[-1].insert(0,'Funnel')
+                    pixels[-1].insert(0, sheetname)
                     row = int(re.findall(r'\d+', cell)[0])
-                    table = self.xlsxFile.sheet._cells_by_row(4, row, 14, row)
+                    table = self.xlsxFile.sheet._cells_by_row(starColumn, row, endColumn, row)
                     for r in table:
                         for c in r:
                             dataPixel.append(c.value)
                     for index in indexes:
-                        if index == 2 and 'PV_' in dataPixel[1] and not 'Home' in dataPixel[1] and not 'AllPages' in dataPixel[1]:
-                            path_ = urlparse(dataPixel[2]).path.split('/')
-                            self.webDOM.deleteItemList(path_, '')
-                            self.webDOM.deleteSubPaths(path_)
-                            try:
-                                pixels[-1].append('/'+path_[0])
-                            except:
-                                pixels[-1].append(None)
+                        if index == 2:
+                            if sheetname == 'Otros':
+                                pixels[-1].append('/')
+                            else:
+                                try:
+                                    path_ = urlparse(self.xlsxFile.readCell('F31')).path.split('/')
+                                    self.webDOM.deleteItemList(path_, '')
+                                    self.webDOM.deleteSubPaths(path_)
+                                    pixels[-1].append('/'+path_[0])
+                                except:
+                                    pixels[-1].append(None)
                         else:
-                            pixels[-1].append(dataPixel[index])
-                        #pixels[-1].append(dataPixel[index])
-                    cell, value = self.xlsxFile.readNextCell(cell)
-                    if value in [None, '']: flat = False
-            else:
-                dataPixel = []
-                indexes = [1, 0, 3, 2, 5, 6, 7, 8, 9, 10]
-                pixels.append([])
-                pixels[-1].insert(0, sheetname)
-                table = self.xlsxFile.sheet._cells_by_row(4, 31, 14, 31)
-                for r in table:
-                    for c in r:
-                        dataPixel.append(c.value)
-                for index in indexes:
-                    if index == 2:
-                        path_ = urlparse(dataPixel[2]).path.split('/')
-                        self.webDOM.deleteItemList(path_, '')
-                        self.webDOM.deleteSubPaths(path_)
-                        if sheetname == 'Otros':
-                            pixels[-1].append('/')
-                        else:
-                            try:
-                                pixels[-1].append('/'+path_[0])
-                            except:
-                                pixels[-1].append(None)
-                    else:
-                        pixels[-1].append(dataPixel[index])        
+                            pixels[-1].append(dataPixel[index]) 
+                    cell, value = self.xlsxFile.readNextCell(cell)   
+                    if value in [None, '']: flat = False    
         return pixels
     
     def save(self):
