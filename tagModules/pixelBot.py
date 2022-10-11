@@ -62,6 +62,7 @@ class pixelBot:
         self.viewProgress  = 0
         self.seleniumDelay = 2
         self.waitings      = 6
+        self.seleniumDelay = 30
 
     def setUrl(self, url):
         """This method sets the target URL that pixelBot spyder is working on.
@@ -84,7 +85,12 @@ class pixelBot:
         self.driver.maximize_window()
         self.setUrl(url)
         self.loadPage()
-
+        
+    def resetDriver(self, url, headless):
+        self.marionette = headless
+        self.tearDown()
+        self.setDriver(url)        
+        
     def getUrl(self):
         """This method retrieves the URL target that PixelBot is working on.
 
@@ -115,7 +121,7 @@ class pixelBot:
         return webdriver.Firefox(service=service, options = fireFoxOptions)
     
     def setSeleniumDelay(self, delay):
-        """This method sets a time delay to handle the load-times of the webElements.
+        """This method sets a time delay to handle the load-times of the webelements.
 
         Args:
             delay (int): Amount the time in seconds that to implement as delay.
@@ -137,7 +143,7 @@ class pixelBot:
         Args:
             enable (boolean): True to enable the marionette. False in other case.
         """
-        self.marionette = enable 
+        self.marionette = enable        
     
     def loadPage(self, url = None):
         """This method allow to the marionette load a website.
@@ -794,11 +800,6 @@ class pixelBot:
                 return 'No TAG'
             else:
                 return 'NO TAG'
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//div[@id="name"]')))[0].send_keys(pixelName)
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"URL Address")]'))).send_keys('/test')
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_element_located((By.XPATH,'//button/span[contains(text(),"ADD")]'))).click()
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//button/span[contains(text(),"Create Audience")]')))[0].click()
-            #return 'Test_Taboola'
         elif platform == 2 and pixelType=='RTG' and event_:
             query = 'accountId=%s' % advertiserId
             self.setDriver(urlparse('https://ads.taboola.com/audiences/pixel-based/new')._replace(query=query).geturl())
@@ -873,18 +874,12 @@ class pixelBot:
             time.sleep(10)
             iframe = WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//div/iframe[contains(@title,"Tracking")]')))
             self.driver.switch_to.frame(iframe[0])
-            #time.sleep(5)
-            #WebDriverWait(self.driver, 60).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[@id="btn-new-rule"]')))[0].click()
             createNew, error = self.getWebElement('XPATH', '//a[@id="btn-new-rule"]')
             self.doWebElement(createNew[0])
             event, error = self.getWebElement('XPATH', '//button[contains(text(),"Event")]')
             self.doWebElement(event[0])
             webElement, error = self.getWebElement('XPATH', '//button[contains(text(),"Custom")]')
             self.doWebElement(webElement[0])
-            #time.sleep(10)
-            #WebDriverWait(self.driver, 60).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[@id="btn-new-rule"]')))[0].click()
-            #WebDriverWait(self.driver, 60).until(EC.visibility_of_any_elements_located((By.XPATH,'//button[contains(text(),"Event")]')))[0].click()
-            #WebDriverWait(self.driver, 60).until(EC.visibility_of_any_elements_located((By.XPATH,'//button[contains(text(),"Custom")]')))[0].click()
             WebDriverWait(self.driver, 60).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[@id="conversionName"]')))[0].send_keys(pixelName)
             eventName = pixelName.split('_',1)[1] if len(pixelName.split('_',1))>1 and not pixelName.split('_',1)[1].isdigit() else pixelName
             WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[@id="eventName"]')))[0].clear()
@@ -901,18 +896,13 @@ class pixelBot:
             else:
                 self.driver.switch_to.default_content()
                 return snippet
-            #self.driver.switch_to.default_content()
-            #return snippet
         elif platform == 2 and pixelType=='CONV' and not event_:
             query = 'accountId=%s' % advertiserId
             self.setDriver(urlparse('https://ads.taboola.com/conversions')._replace(query=query).geturl())
             iframe, error = self.getWebElement('XPATH', '//div/iframe[contains(@title,"Tracking")]')
             if iframe != -1: self.driver.switch_to.frame(iframe[0])
-            #time.sleep(30)
-            #print('Hemos terminado la espera')
             createNew, error = self.getWebElement('XPATH', '//a[@id="btn-new-rule"]')
             self.doWebElement(createNew[0])
-            #createNew[0].click()
             webElement, error = self.getWebElement('XPATH', '//input[@placeholder="advertiser.com/thank-you"]', visible=False) 
             if webElement != -1:
                 if 'HomePV' in pixelName:
@@ -931,8 +921,6 @@ class pixelBot:
                         webElement, error = self.getWebElement('XPATH', '//input[@placeholder="advertiser.com/thank-you"]', visible=False)
                         if not self.doWebElement(webElement[-1], typeAction='write', message=pathURL):
                             return '404'
-            #webElement, error = self.getWebElement('XPATH', '//button[@id="addUrlConversion"]')
-            #if webElement != -1: webElement[0].click()
             webElement, error = self.getWebElement('XPATH', '//input[@id="conversionName"]')
             webElement[0].send_keys(pixelName)
             webElement, error = self.getWebElement('XPATH', '//select[@id="conversionCategory"]')
@@ -953,36 +941,6 @@ class pixelBot:
                 return 'Code: Not Create'
             else:
                 return snippet
-            # fragment = 'client/%s/activities' % advertiserId
-            # self.setDriver(urlparse('https://amerminsights.mplatform.com')._replace(fragment=fragment).geturl())
-            # iframe = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div/iframe[contains(@class,"external-iframe")]')))
-            # self.driver.switch_to.frame(iframe)
-            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//button[contains(@id,"createButton") and contains(text(),"Create Activity")]'))).click()
-            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[@id="name"]'))).send_keys(pixelName)
-            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//span[contains(text(),"for Consumer Correlation")]'))).click()
-            # if customVariable == 'u/p':
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[0].send_keys('p')
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[0].send_keys('p')
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[1].send_keys('u')
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[1].send_keys('u')
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()
-            # else:
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"customvariable_")]')))[0].send_keys(customVariable)
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"variableId")]')))[0].send_keys(customVariable)
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,'//a[contains(text(),"add")]')))[0].click()  
-            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//div[contains(text(),"SAVE")]'))).click()
-            # try:
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,"//div[contains(text(),'Duplicate')]")))
-            #     WebDriverWait(self.driver, 30).until(EC.visibility_of_any_elements_located((By.XPATH,"//div/i[contains(@class,'close')]")))[0].click()
-            # except:
-            #     pass
-            # WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//input[contains(@placeholder,"Search...")]'))).send_keys(pixelName+Keys.ENTER)
-            # time.sleep(10)
-            # WebDriverWait(self.driver, 60).until(EC.visibility_of_element_located((By.XPATH,'//i[@class="js-activity-tag turbine tag link icon"]'))).click()
-            # snippet = WebDriverWait(self.driver, 30).until(EC.visibility_of_element_located((By.XPATH,'//textarea[@id="activityTagCode"]'))).get_attribute('value')
-            # self.driver.switch_to.default_content()
-            # return snippet
         return 'Code: No Platform'
     
     def createMinsightPixel(self, advertiserId, pixelName, customVariables):
@@ -1343,23 +1301,7 @@ class pixelBot:
                 else:
                     return False
             else: 
-                return False
-            
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//div[contains(@class,"accountPicker_container__1sNyQ")]')))[0].click()
-            #time.sleep(5)
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"react-select-")]')))[0].clear()
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"react-select-")]')))[0].send_keys(advertiserId)
-            #time.sleep(2)
-            #WebDriverWait(self.driver, 10).until(EC.visibility_of_any_elements_located((By.XPATH,'//input[contains(@id,"react-select-")]')))[0].send_keys(Keys.ENTER)
-            #time.sleep(3)
-            #try:
-            #    advId = re.findall(r'-?\d+\.?\d*',self.driver.current_url)[0]
-            #    if advId == advertiserId:
-            #        return True
-            #    else:
-            #        return False
-            #except:
-            #    return False     
+                return False   
         else:
             return False
         
@@ -1710,6 +1652,14 @@ class pixelBot:
             #         return False
                             
     def existTaboolaPixel(self, advertiserId):
+        """This method valid if the Universal Taboola Pixel is implemented or not.
+
+        Args:
+            advertiserId (str): Advertiser ID to validate if it has implemented the Taboola Universal Pixel.
+
+        Returns:
+            boolean: True if the universal pixel is implemented.
+        """        
         query = 'accountId=%s' % advertiserId
         self.setDriver(urlparse('https://ads.taboola.com/conversions')._replace(query=query).geturl())
         iframe, iframeError = self.getWebElement('XPATH', '//div/iframe[contains(@title,"Tracking")]')
@@ -1861,6 +1811,7 @@ class pixelBot:
         
     def tearDown(self):
         if not self.driver == None:
+            self.set = False
             self.driver.quit()
 
 if __name__ == '__main__':
