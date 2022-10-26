@@ -616,6 +616,27 @@ class pixelBot:
             snippet code of the pixel or errorCode.    
     """ 
     def createPixel(self, advertiserId, pixelName, platform=0, pixelType='RTG', customVariable='u/p', event_=False, pathURL=None):
+        """This method allows us to implement the creation of tracking pixels in each DSP platform and the DMP Minsights.
+                    
+
+        Args:
+            advertiserId (str): Id that identifies each client in a platform.
+            pixelName (str): Name of the pixel to be created.
+            platform (int, optional): DSP or DMP where to create the pixel. Defaults to 0.
+                0 -> Xandr DSP
+                1 -> DV360 DSP
+                2 -> Taboola DSP
+                3 -> Minsight DMP
+            pixelType (str, optional): Identify if the pixel is of retargeting or conversion. Defaults to 'RTG'.
+                RTG  -> Retargeting
+                CONV -> Conversion
+            customVariable (str, optional): Custom variable to get additional information. Defaults to 'u/p'.
+            event_ (bool, optional): True or False. Defaults to False.
+            pathURL (_type_, optional): Path or URL to define a specific filter in the tracking code. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """        
         if platform == 0 and pixelType == 'RTG':
             query = 'advertiser_id=%s' % advertiserId
             self.setDriver(urlparse('https://invest.xandr.com/dmp/segments/new')._replace(query=query).geturl())
@@ -722,6 +743,8 @@ class pixelBot:
             if typee != -1: typee[0].click()
             counting, countingError = self.getWebElement('XPATH', '//div[contains(text(),"Standard")]')
             if counting != -1: counting[0].click()
+            attribution, error = self.getWebElement('XPATH', '//div[contains(text(),"Enable activity for attribution")]')
+            if attribution != -1: self.doWebElement(attribution[0])
             exclude, excludeError = self.getWebElement('XPATH', '//div[contains(text(),"exclude")]')
             if exclude != -1: self.doWebElement(exclude[0])
             remarketing, remarketingError = self.getWebElement('XPATH', '//div[contains(text(),"Enable this Display & Video 360 activity for remarketing.")]')

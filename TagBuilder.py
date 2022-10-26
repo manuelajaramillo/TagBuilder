@@ -1,6 +1,6 @@
 """TagBuilder Application
 This application allow us to automate:
-    1. Sitemap Builting.
+    1. Sitema p Builting.
     2. Pixel creating in Taboola, DV360, Minsights, Xandr, Google Ads, GA4 and Facebook.
     3. Tag creation in Google Tag Manager.
 @author: Albeiro Jiménez López

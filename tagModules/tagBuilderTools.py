@@ -1,5 +1,6 @@
 from datetime import date as dt
 from os import path
+import re
 
 MONTHS  = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -30,3 +31,24 @@ class Naming:
 class MathTag:
     def __init__(self):
         pass
+    
+class stringMethods:
+    def __init__(self):
+        pass
+    
+    @classmethod
+    def subStrings(cls, regexPattern, string):
+        try:
+            return re.findall(regexPattern, string)
+        except:
+            return []
+        
+    @classmethod
+    def extractCode(cls, regexPattern, string):
+        try:
+            return re.findall(regexPattern, string)[0]
+        except:
+            return string
+        
+if __name__ == '__main__':
+    sObj = stringMethods()

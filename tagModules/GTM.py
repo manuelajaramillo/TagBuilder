@@ -393,7 +393,60 @@ class TagTemple:
             self.temple[nameParameter].append(parameter)
         except KeyError:
             self.temple[nameParameter] = [parameter]
+   
+class CustomTemple(TagTemple):
+    def __init__(self, name, code):
+        super().__init__(name)
+        self._init_parameters(code)
+        
+    def _init_parameters(self, codeJS):
+        self.setProperty('type', 'html')
+        self.setParameter('parameter', 'template', 'html', codeJS)
+        
+class AudienceTag(CustomTemple):
+    def __init__(self, name, code, pathAudience):
+        super().__init__(name, code)
+        self.trigger = PageviewTrigger(name, pathAudience, pageType='Section')
+        
+class ButtonTag(CustomTemple):
+    def __init__(self, name, code, selector):
+        super().__init__(name, code)
+        self.trigger = ClickTrigger(name, selector['attribute'], selector['value'])
+        
+class GA4Setting(TagTemple):
+    def __init__(self, name, measurementID):
+        super().__init__(name)
+        self._init_parameters(measurementID)
+        
+    def _init_parameters(self, measurementID):
+        self.setProperty('type', 'gaawc')
+        self.setProperty('firingTriggerId', '2147479573')
+        self.setParameter('parameter', 'boolean', 'sendPageView', 'true')
+        self.setParameter('parameter', 'boolean', 'enableSendToServerContainer', 'false')
+        self.setParameter('parameter', 'template', 'measurementId', measurementID)
+        
     
+class GA4Event(TagTemple):
+    def __init__(self, name, ga4Setting):
+        super().__init__(name)  
+        self._init_parameters(ga4Setting)
+        
+    def _init_parameters(self, ga4Setting): 
+        try:
+            advertiser, eventName, date = self.temple['name'].split('_')
+        except:
+            eventName = self.temple['name']
+        self.setProperty('type', 'gaawe')
+        self.setParameter('parameter', 'template', 'eventName', eventName)
+        self.setParameter('parameter', 'tagReference', 'measurementId', ga4Setting)
+class facebookTemple(TagTemple):
+    def __init__(self, name):
+        super().__init__(name)
+        
+class TwitterTemple(TagTemple):
+    def __init__(self, name):
+        super().__init__(name)
+        
 class TriggerTemple:
     def __init__(self, name, triggerType):
         self.create = False
@@ -405,7 +458,7 @@ class TriggerTemple:
     def addFilter(self, filterType, condition, variable, value, keys=['arg0', 'arg1']):
         variable = '{{'+variable+'}}'
         filter_ = {'type': condition, 'parameter': [{'type': 'template', 'key': keys[0], 'value': variable}, {'type': 'template', 'key': keys[1], 'value': value}]}
-        if filterType == 'matchRegex':
+        if condition == 'matchRegex':
             filter_['parameter'].append({'type': 'boolean', 'key': 'ignore_case', 'value': 'true'})
         try:
             self.temple[filterType].append(filter_)
@@ -423,32 +476,6 @@ class TriggerTemple:
     
     def setFolder(self, parentFolderId):
         self.temple['parentFolderId'] = parentFolderId 
-    
-class VariableTemple:
-    def __init__(self):
-        self.create = False
-   
-class CustomTemple(TagTemple):
-    def __init__(self, name, code):
-        super().__init__(name)
-        self._init_parameters(code)
-        
-    def _init_parameters(self, codeJS):
-        self.setProperty('type', 'html')
-        self.setParameter('parameter', 'template', 'html', codeJS)
-        
-class AudienceTag(CustomTemple):
-    def __init__(self, name, code, pathAudience):
-        super().__init__(name, code)
-        self.trigger = PageviewTrigger(name, pathAudience, pageType='Section')
-        
-class facebookTemple(TagTemple):
-    def __init__(self, name):
-        super().__init__(name)
-        
-class TwitterTemple(TagTemple):
-    def __init__(self, name):
-        super().__init__(name)
         
 class PageviewTrigger(TriggerTemple):
     def __init__(self, name, var_value='/', triggerType='pageview', pageType='AllPages'):
@@ -499,6 +526,23 @@ class ScrollTrigger(TriggerTemple):
             self.temple[nameParameter].append(parameter)
         except KeyError:
             self.temple[nameParameter] = [parameter]
+            
+class ClickTrigger(TriggerTemple):
+    def __init__(self, name, conditionType, conditionValue):
+        super().__init__(name, 'click')
+        self._init_filter(conditionType, conditionValue)
     
+    def _init_filter(self, conditionType, conditionValue):
+        if conditionType == 'ID':
+            self.addFilter('filter', 'equals', 'Click ID', conditionValue)
+        elif conditionType == 'CLICK URL':
+            self.addFilter('filter', 'contains', 'Click URL', conditionValue)
+        else:
+            self.addFilter('filter', 'matchRegex', 'Click Text', conditionValue)
+    
+class VariableTemple:
+    def __init__(self):
+        self.create = False
+
 if __name__ == '__main__':
     gtm = GTM()

@@ -888,6 +888,7 @@ class urlDomains:
                 arraySections[i].pop(0)
             else:
                 for landing in arraySections[i][:]:
+                    print("Esta URL fue agregada porque la categoría no tenía suficientes landings", landing)
                     urls.append(landing)
                 arraySections.pop(i)
                 self.mainSections.pop(i)
@@ -896,6 +897,7 @@ class urlDomains:
             if len(arraySection) == 0:
                 arraySections.remove(arraySection)
                 self.mainSections.remove(mainSection)
+                print("El procerso de eliminación de secciones vacías ha eliminado: ", mainSection)
            
         if len(arraySections)>self.maxCategories:
             for i, j in zip(range(len(arraySections)-1, -1, -1), range(len(self.mainSections)-1, -1, -1)):
@@ -905,12 +907,15 @@ class urlDomains:
                     print('Delete Section: '+ self.mainSections[j]+'  With index: '+str(j))
                     self.mainSections.pop(j)
                     urls.append(arraySections[i][0])
+                    print("Esto estoy agregando a urls atributo: ", arraySections[i][0])
+                    print("Esto estoy agregando a urls atributo: ", arraySections[i][1])
                     urls.append(arraySections[i][1])
                     #arraySections[-1].insert(0, arraySections[i][0])
                     #arraySections[-1].insert(0, arraySections[i][1])
                     arraySections.pop(i)
                 elif len(arraySections[i]) > 0:
                     print('Delete Section: '+ self.mainSections[j]+'  With index: '+str(j))
+                    print("Esto estoy agregando a urls atributo: ", arraySections[i][0])
                     self.mainSections.pop(j)
                     urls.append(arraySections[i][0])
                     #arraySections[-1].append(arraySections[i][0])
@@ -922,8 +927,16 @@ class urlDomains:
                     break
                 
         self.mainSections.append('Otros')
+        print('*'*30)
+        print('*'*30)
+        print('*'*30)
+        print("El numero de landings sobrantes es: ", len(urls))
+        print('*'*30)
+        print('*'*30)
+        print('*'*30)
         if len(urls) == 0: 
-            arraySections.append('/') 
+            arraySections.append(['/'])
+            #arraySections.append('/') 
         else: 
             arraySections.append(urls[1:])
                 
@@ -931,6 +944,14 @@ class urlDomains:
             arraySections[i].sort()
         self.mainSections.insert(0,'') 
         self.arraySections = arraySections
+        print('*'*30)
+        print('*'*30)
+        print('*'*30)
+        print("El array de categorias es: ",self.mainSections)
+        print("El array de secciones es: ",self.arraySections)
+        print('*'*30)
+        print('*'*30)
+        print('*'*30)
         #return arraySections
     
     def getArraySectionsII(self):

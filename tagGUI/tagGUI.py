@@ -10,8 +10,9 @@ from urllib.parse import urlparse
 from tkinter import font
 from tkinter.constants import OFF
 
-from tagModules.GTM import AudienceTag, CustomTemple, GTM, PageviewTrigger, ScrollTrigger, TimerTrigger
+from tagModules.GTM import AudienceTag, ButtonTag, CustomTemple, GTM, ClickTrigger, PageviewTrigger, ScrollTrigger, TimerTrigger
 from tagModules.urlExtractor import urlDomains as webDOM
+from tagModules.tagBuilderTools import stringMethods as sM
 from tagModules.pixelBot import pixelBot
 from tagModules.handleFile import xlsxFile
 from googleapiclient.errors import HttpError
@@ -56,7 +57,7 @@ PLATFORMS_BASE = (
 )
 
 PLATFORM_COLORS = {
-    'programmatic':'DDDDDD', 'tik-tok':'F8DAE9', 'twitter':'B9D6F3', 'ga4':'F1E8D9', 'ads':'F4C2D7', 'meta':'A1C9F1'
+    'programmatic':'DDDDDD', 'tik-tok':'F8DAE9', 'twitter':'B9D6F3', 'ga4':'F1E8D9', 'ads':'F4C2D7', 'meta':'A1C9F1', 'microconvertion':'F4C2D7'
 }
 
 TYPE_MS = (
@@ -1062,8 +1063,10 @@ class tagFrontEnd(FrameWork2D):
         if numTree == 0:
             try:
                 self.dataTable.insert(parent, 'end', iid=itemID, text=data[0], values=data[1:])
+                print("Se ha agregado correctamente")
                 return True
             except:
+                print("No se ha agregado.")
                 return False
         elif numTree == 1:
             try:
@@ -1086,6 +1089,11 @@ class tagFrontEnd(FrameWork2D):
                         self.dataTable.delete(mainSection)
                     except:
                         continue
+            if self.dataTable.exists('Borrar'):
+                try:
+                    self.dataTable.delete('Borrar')
+                except:
+                    pass  
         elif numTree == 1:
             for pixel in self.arrayPixels:
                 if self.pixelTable.exists(pixel[0]):
@@ -1113,14 +1121,20 @@ class tagFrontEnd(FrameWork2D):
                     self.addItem('', 'Main', ['/Home','',''])
                     self.addItem('Main', 'MainDomain', ['', self.webDOM.getUrlTarget(),''])
             else:
-                print("Index Section: "+str(index_section))
+                print("Index Section: "+str(index_section)+'  '+mainSection)
                 parent = '/'+self.fitNameSection(mainSection)
                 self.addItem('', mainSection, [parent,'',''])
                 for subDomain in arraySections[index_section]:
                     #iid = subDomain.split('/')[-2] + subDomain.split('/')[-3]
+                    print(mainSection+' '+str(idd)+' '+subDomain)
                     self.addItem(mainSection, idd,['', subDomain,''])
                     idd+=1
                 index_section+=1
+        else:
+            if len(self.webDOM.subDomains)>1:
+                self.addItem('', 'Borrar', ['/'+'Borrar','',''])
+                self.addItem('Borrar', idd,['', 'subDomain',''])
+                self.dataTable.delete('Borrar')
                 
     def addItemTreeViewII(self, arrayPixels, numTree=1):
         """This method allows us to build the category tree of the pixels that we need in the Measurement
@@ -1136,7 +1150,7 @@ class tagFrontEnd(FrameWork2D):
         for pixel in arrayPixels:
             if pixel[0] not in categories:
                 categories.append(pixel[0])
-        time.sleep(10)
+        #time.sleep(10)
         for category in categories:
             self.addItem('', category, ['/'+category,'','','',''], numTree)
             for pixel in arrayPixels:
@@ -1335,6 +1349,7 @@ class tagFrontEnd(FrameWork2D):
         self.btn_loadTags.configure(state='disable')
         if self.validTRFile('Final'):
             self.addItemTreeViewII(self.getArrayPixels(), 2)
+            #self.getArrayPixels(self.getArrayPixels(), 2)
             self.btn_gtmConnect.configure(state='active')
             self.lanchPopUps('Extracted!', 'The Tags had read from TR!', 'Press "Ok" to exit.')
         else:
@@ -1409,44 +1424,112 @@ class tagFrontEnd(FrameWork2D):
         home = urlparse(self.get_homepage()).hostname if self.get_homepage() != None else 'homepage.com'
         for pixel in self.arrayPixels:
             snippet = ''
-            for code in pixel[5:]:
+            for code in pixel[6:]:
                 if code != None and code.casefold() not in ['si', 'no', '', 'url', 'event']:
                     snippet += code
             if snippet == '': continue
-            if pixel[0] == 'General' or pixel[0] == 'Funnel':
-                advertiser, trigger, date = pixel[1].split('_')
-                if re.findall(r'PV$', trigger):
-                    if re.findall(r'^HomeUTM', trigger):
-                        pass
-                    elif re.findall(r'^Home', trigger):
-                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                        self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Home'))
-                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
-                        if not self.existTag(tags, pixel[1]):
-                            self.gtmTags[-1].setState()
+            advertiser, trigger, date = pixel[1].split('_')
+            if pixel[0] == 'Home' or pixel[0] == 'Funnel':
+                if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$|%sBtn$|%sScroll\d{1,2}$|%sT\d+ss$'%(p.capitalize(),p.capitalize(), p.capitalize(),p.capitalize()),trigger)]:
+                    pass
+                else:
+                    print('*'*60)
+                    print('*'*60)
+                    print('Pixel tipo Home or Funnel: ', pixel[1], pixel[0])
+                    print('*'*60)
+                    print('*'*60)
+                    if re.findall(r'PV$', trigger):
+                        if re.findall(r'^HomeUTM', trigger):
+                            pass
+                        elif re.findall(r'^Home', trigger):
+                            self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Home'))
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            if not self.existTag(tags, pixel[1]):
+                                self.gtmTags[-1].setState()
+                            else:
+                                tagId = self.getTagId(tags, pixel[1])
+                                if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                            if not self.existTrigger(triggers, pixel[1]): 
+                                self.gtmTags[-1].trigger.setState()
+                            else:
+                                triggerId = self.getTriggerId(triggers, pixel[1])
+                                if triggerId != '': 
+                                    self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                    self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                        elif re.findall(r'AllPages', trigger):
+                            self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                            self.gtmTags[-1].setProperty('firingTriggerId', '2147479553')
+                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            if not self.existTag(tags, pixel[1]): 
+                                self.gtmTags[-1].setState()
+                            else:
+                                tagId = self.getTagId(tags, pixel[1])
+                                if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
                         else:
-                            tagId = self.getTagId(tags, pixel[1])
-                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
-                        if not self.existTrigger(triggers, pixel[1]): 
-                            self.gtmTags[-1].trigger.setState()
-                        else:
-                            triggerId = self.getTriggerId(triggers, pixel[1])
-                            if triggerId != '': 
-                                self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
-                                self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
-                    elif re.findall(r'AllPages', trigger):
-                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                        self.gtmTags[-1].setProperty('firingTriggerId', '2147479553')
-                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                        if not self.existTag(tags, pixel[1]): 
-                            self.gtmTags[-1].setState()
-                        else:
-                            tagId = self.getTagId(tags, pixel[1])
-                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
-                    else:
-                        self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
-                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
+                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
+                            if not self.existTag(tags, pixel[1]): 
+                                self.gtmTags[-1].setState()
+                            else:
+                                tagId = self.getTagId(tags, pixel[1])
+                                if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                            if not self.existTrigger(triggers, pixel[1]): 
+                                self.gtmTags[-1].trigger.setState()
+                            else:
+                                triggerId = self.getTriggerId(triggers, pixel[1])
+                                if triggerId != '': 
+                                    self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                    self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                    elif re.findall(r'Scroll\d{1,2}$', trigger):
+                        if re.findall(r'^AllPages', trigger):
+                            self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            depth = re.findall(r'\d{1,2}', trigger)[0]
+                            self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], depth))
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            if not self.existTag(tags, pixel[1]):
+                                self.gtmTags[-1].setState()
+                            else:
+                                tagId = self.getTagId(tags, pixel[1])
+                                if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                            if not self.existTrigger(triggers, pixel[1]): 
+                                self.gtmTags[-1].trigger.setState()
+                            else:
+                                triggerId = self.getTriggerId(triggers, pixel[1])
+                                if triggerId != '': 
+                                    self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                    self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                    elif re.findall(r'T\d+ss$', trigger):
+                        if re.findall(r'^AllPages', trigger):
+                            self.gtmTags.append(CustomTemple(pixel[1], snippet))
+                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            time_ = re.findall(r'\d+', trigger)[0]
+                            self.gtmTags[-1].setTrigger(TimerTrigger(pixel[1], time_, home))
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            if not self.existTag(tags, pixel[1]):
+                                self.gtmTags[-1].setState()
+                            else:
+                                tagId = self.getTagId(tags, pixel[1])
+                                if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                            if not self.existTrigger(triggers, pixel[1]): 
+                                self.gtmTags[-1].trigger.setState()
+                            else:
+                                triggerId = self.getTriggerId(triggers, pixel[1])
+                                if triggerId != '': 
+                                    self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                    self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                    elif re.findall(r'Btn$', trigger):
+                        try:
+                            attribute, value = pixel[5].split(':')
+                            attribute, value = attribute.upper(), value.upper()
+                        except:
+                            attribute, value = 'TEXT', 'TBD'
+                        self.gtmTags.append(ButtonTag(pixel[1], snippet, {'attribute':attribute, 'value':value}))
+                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId']) 
                         self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
                         if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
                         if not self.existTag(tags, pixel[1]): 
@@ -1461,72 +1544,43 @@ class tagFrontEnd(FrameWork2D):
                             if triggerId != '': 
                                 self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
                                 self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
-                elif re.findall(r'Scroll\d{1,2}$', trigger):
-                    if re.findall(r'^AllPages', trigger):
-                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                        depth = re.findall(r'\d{1,2}', trigger)[0]
-                        self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], depth))
-                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
-                        if not self.existTag(tags, pixel[1]):
-                            self.gtmTags[-1].setState()
-                        else:
-                            tagId = self.getTagId(tags, pixel[1])
-                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
-                        if not self.existTrigger(triggers, pixel[1]): 
-                            self.gtmTags[-1].trigger.setState()
-                        else:
-                            triggerId = self.getTriggerId(triggers, pixel[1])
-                            if triggerId != '': 
-                                self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
-                                self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
-                elif re.findall(r'T\d+ss$', trigger):
-                    if re.findall(r'^AllPages', trigger):
-                        self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                        time_ = re.findall(r'\d+', trigger)[0]
-                        self.gtmTags[-1].setTrigger(TimerTrigger(pixel[1], time_, home))
-                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
-                        if not self.existTag(tags, pixel[1]):
-                            self.gtmTags[-1].setState()
-                        else:
-                            tagId = self.getTagId(tags, pixel[1])
-                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
-                        if not self.existTrigger(triggers, pixel[1]): 
-                            self.gtmTags[-1].trigger.setState()
-                        else:
-                            triggerId = self.getTriggerId(triggers, pixel[1])
-                            if triggerId != '': 
-                                self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
-                                self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
-                else:
-                    print('Pixel saltado: ', pixel[1])
-                    continue
-            # elif pixel[0] == 'Funnel':
-            #     print('Awareness and Branding Pixel')
-            #     if self.existTag(tags, pixel[1]): 
-            #         print('This pixel, %s already exists! We need to update the temple'%pixel[1])
-            #     else:
-            #         print('This pixel, %s do not exist, we need to create it!'%pixel[1])
+                    else:
+                        continue
             elif 'Otros' in pixel[0]:
-                otherID = self.getTagId(tags, pixel[1]) if self.existTag(tags, pixel[1]) else otherID
+                if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(),trigger)]:
+                    pass
+                else: 
+                    print('*'*60)
+                    print('*'*60)
+                    print('Pixel tipo Otros: ', pixel[1], pixel[0])
+                    print('*'*60)
+                    print('*'*60)
+                    otherID = self.getTagId(tags, pixel[1]) if self.existTag(tags, pixel[1]) else otherID
             else:
-                self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
-                self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
-                if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
-                if not self.existTag(tags, pixel[1]): 
-                    self.gtmTags[-1].setState()
+                if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(),trigger)]:
+                    pass
                 else:
-                    tagId = self.getTagId(tags, pixel[1])
-                    if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
-                if not self.existTrigger(triggers, pixel[1]): 
-                    self.gtmTags[-1].trigger.setState()
-                else:
-                    triggerId = self.getTriggerId(triggers, pixel[1])
-                    if triggerId != '': 
-                        self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
-                        self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                    print('*'*60)
+                    print('*'*60)
+                    print('Pixel tipo Audiencia: ', pixel[1], pixel[0])
+                    print('*'*60)
+                    print('*'*60)
+                    self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
+                    self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                    self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                    if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
+                    if not self.existTag(tags, pixel[1]): 
+                        self.gtmTags[-1].setState()
+                    else:
+                        tagId = self.getTagId(tags, pixel[1])
+                        if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                    if not self.existTrigger(triggers, pixel[1]): 
+                        self.gtmTags[-1].trigger.setState()
+                    else:
+                        triggerId = self.getTriggerId(triggers, pixel[1])
+                        if triggerId != '': 
+                            self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                            self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
         self.tagProgress.set(10)
         deltaTag = 85/(len(self.gtmTags)) if len(self.gtmTags)>0 else 85
         if deltaTag == 85: self.tagProgress.set(10+deltaTag)
@@ -1579,7 +1633,7 @@ class tagFrontEnd(FrameWork2D):
             for pixel in self.arrayPixels:
                 if pixel[0] == 'Otros':
                     snippet = ''
-                    for code in pixel[5:]:
+                    for code in pixel[6:]:
                         if code != None and code.casefold() not in ['si', 'no', '', 'url', 'event']:
                             snippet += code
                     if snippet == '': break
@@ -1882,9 +1936,9 @@ class tagFrontEnd(FrameWork2D):
                             self.xandrSeg, self.xandrConv = ([], self.xandrConv) if pixelType=='RTG' else (self.xandrSeg, [])
                             step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                             for pixel in self.arrayPixels:
-                                if pixelType == 'RTG' and (pixel[6]==None or pixel[6]=='' or pixel[6]=='NO'):
+                                if pixelType == 'RTG' and (pixel[7]==None or pixel[7]=='' or pixel[7]=='NO'):
                                     self.xandrSeg.append('NO')
-                                elif pixelType == 'CONV' and (pixel[7]==None or pixel[7]=='' or pixel[7]=='NO'):
+                                elif pixelType == 'CONV' and (pixel[8]==None or pixel[8]=='' or pixel[8]=='NO'):
                                     self.xandrConv.append('NO')   
                                 else:
                                     if not self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]):
@@ -1918,15 +1972,19 @@ class tagFrontEnd(FrameWork2D):
                             self.pixelProgress.set(5)
                             step = (5+85/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                             for pixel in self.arrayPixels:
-                                if pixel[8] in [None,'','No','NO','no', 'nO']:
+                                if pixel[9] in [None,'','No','NO','no', 'nO']:
                                     self.DV360.append('NO')
                                 else:
                                     if not self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]):
-                                        snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=1, customVariable=pixel[3])
+                                        fitVariables = self.fitCustomVariables(pixel[3])
+                                        #snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=1, customVariable=pixel[3])
+                                        snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=1, customVariable=fitVariables)
+                                        snippet = sM.extractCode(r'<img.*/>', snippet)
                                         self.DV360.append(snippet)
                                         #pixel.append(snippet)
                                     else:
                                         snippet = self.pixelBot.getSnippetCode(self.advertiserId.get(),pixel[1], self.platforms.get())
+                                        snippet = sM.extractCode(r'<img.*/>', snippet)
                                         self.DV360.append(snippet)
                                         #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
@@ -1953,16 +2011,16 @@ class tagFrontEnd(FrameWork2D):
                                 step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                                 self.taboolaSeg, self.taboolaConv = ([], self.taboolaConv) if pixelType=='RTG' else (self.taboolaSeg, [])
                                 for pixel in self.arrayPixels:
-                                    pixel[9] = 'NO' if pixel[9] == None else pixel[9]
                                     pixel[10] = 'NO' if pixel[10] == None else pixel[10]
-                                    if pixelType == 'RTG' and pixel[9] in ['NO', 'No', 'no', 'nO', '', None]:
+                                    pixel[11] = 'NO' if pixel[11] == None else pixel[11]
+                                    if pixelType == 'RTG' and pixel[10] in ['NO', 'No', 'no', 'nO', '', None]:
                                     #if pixelType == 'RTG' and pixel[9].casefold() not in ['url', 'event']:
                                         self.taboolaSeg.append('NO')
                                     #elif pixelType == 'CONV' and pixel[10].casefold() not in ['url', 'event']:
-                                    elif pixelType == 'CONV' and pixel[10] in ['NO', 'No', 'no', 'nO', '', None]:
+                                    elif pixelType == 'CONV' and pixel[11] in ['NO', 'No', 'no', 'nO', '', None]:
                                         self.taboolaConv.append('NO')
                                     else:
-                                        event   = True if (pixelType == 'RTG' and pixel[9] in ['Event', 'event', 'EVENT']) or (pixelType == 'CONV' and pixel[10] in ['Event', 'event', 'EVENT']) else False
+                                        event   = True if (pixelType == 'RTG' and pixel[10] in ['Event', 'event', 'EVENT']) or (pixelType == 'CONV' and pixel[11] in ['Event', 'event', 'EVENT']) else False
                                         #event   = True if (pixelType == 'RTG' and pixel[9].casefold() == 'event') or (pixelType == 'CONV' and pixel[10].casefold() == 'event') else False
                                         pathURL = pixel[4] if not event else None
                                         #if self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]): self.lanchPopUps('Pixel Exists!', "The pixel %s already existed!"%pixel[1], 'Press "Ok" to exit.')
@@ -1984,7 +2042,7 @@ class tagFrontEnd(FrameWork2D):
                         self.lanchPopUps('Taboola login failed!', 'Check your credentials, please.', 'Press "Ok" to exit.')
                     #self.createPixel(self.platforms.get(), 'AllPagesTest', None)
                 elif self.platforms.get().casefold() in PLATFORMS_ADS:
-                    self.lanchPopUps('Not Implemented!', 'You have been selected a platform in process to be implemehted.', 'Press "Ok" to exit.')
+                    self.lanchPopUps('Not Implemented!', 'You have been selected a platform in process to be implemented.', 'Press "Ok" to exit.')
                 else:
                     self.pixelProgress.set(0)
                     if self.logInPlatform(LOGIN_PAGES[3], self.users[0].get(), self.passwords[3].get()):
@@ -1998,12 +2056,17 @@ class tagFrontEnd(FrameWork2D):
                             self.minsights = []
                             self.pixelProgress.set(7)
                             for pixel in self.arrayPixels:
-                                if pixel[5] in [None,'','No','NO','no', 'nO', '']:
+                                if pixel[6] in [None,'','No','NO','no', 'nO', '']:
                                     self.minsights.append('NO')
                                 else:
                                     if not self.pixelBot.existPixel(self.platforms.get(), self.advertiserId.get(), pixel[1]):
                                         #print('El pixel: '+pixel[1]+', no existe y se puede crear!!!')
-                                        snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=3, customVariable=pixel[3])
+                                        fitVariables = self.fitCustomVariables(pixel[3])
+                                        print("Las variables ajustadas son: ", fitVariables)
+                                        print("Las variables ajustadas son: ", fitVariables)
+                                        print("Las variables ajustadas son: ", fitVariables)
+                                        #snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=3, customVariable=pixel[3])
+                                        snippet =  self.pixelBot.createPixel(self.advertiserId.get(), pixel[1], platform=3, customVariable=fitVariables)
                                         self.minsights.append(snippet)
                                         #pixel.append(snippet)
                                     else:
@@ -2203,7 +2266,7 @@ class tagFrontEnd(FrameWork2D):
         pixels = []
         for sheetname in self.xlsxFile.book.sheetnames:
             self.xlsxFile.setSheet(sheetname)
-            flat, cell, indexes = True, 'E31', [1, 0, 3, 2, 5, 6, 7, 8, 9, 10]
+            flat, cell, indexes = True, 'E31', [1, 0, 3, 2, 4, 5, 6, 7, 8, 9, 10]
             if self.xlsxFile.readCell(cell) in [None, '']: flat = False
             if sheetname in ['Concept Tagging Request ', 'Hoja1', 'Listas']:
                 continue
@@ -2231,29 +2294,6 @@ class tagFrontEnd(FrameWork2D):
                             pixels[-1].append(dataPixel[index])
                     cell, value = self.xlsxFile.readNextCell(cell)
                     if value in [None, '']: flat = False
-            # elif sheetname == 'Funnel':
-            #     while flat:
-            #         dataPixel = []
-            #         pixels.append([])
-            #         pixels[-1].insert(0,'Funnel')
-            #         row = int(re.findall(r'\d+', cell)[0])
-            #         table = self.xlsxFile.sheet._cells_by_row(4, row, 14, row)
-            #         for r in table:
-            #             for c in r:
-            #                 dataPixel.append(c.value)
-            #         for index in indexes:
-            #             if index == 2 and 'PV_' in dataPixel[1] and not 'Home' in dataPixel[1] and not 'AllPages' in dataPixel[1]:
-            #                 path_ = urlparse(dataPixel[2]).path.split('/')
-            #                 self.webDOM.deleteItemList(path_, '')
-            #                 self.webDOM.deleteSubPaths(path_)
-            #                 try:
-            #                     pixels[-1].append('/'+path_[0])
-            #                 except:
-            #                     pixels[-1].append(None)
-            #             else:
-            #                 pixels[-1].append(dataPixel[index])
-            #         cell, value = self.xlsxFile.readNextCell(cell)
-            #         if value in [None, '']: flat = False
             else:
                 while flat:
                     dataPixel = []
@@ -2301,6 +2341,7 @@ class tagFrontEnd(FrameWork2D):
                     self.xlsxFile.sheet.title = 'Home'
                 self.xlsxFile.setSheet('Home')
                 cell = 'E31'
+                styleFont = {'name':'Calibri', 'size':11, 'bold':True, 'italic':True, 'color':'FF000000'}
                 for platform in PLATFORMS_ADS:
                     if self.__getattribute__('platform%s'%platform.capitalize()).get():
                         platform = '' if platform == 'programmatic' else platform
@@ -2308,7 +2349,6 @@ class tagFrontEnd(FrameWork2D):
                         if cell != 'E31':
                             self.xlsxFile.sheet.merge_cells('B%d:B%d'%(row,row+1))
                             self.xlsxFile.sheet.merge_cells('B%d:B%d'%(row+2,row+3))
-                            styleFont = {'name':'Calibri', 'size':11, 'bold':True, 'italic':True, 'color':'FF000000'}
                             self.xlsxFile.writeCell('B'+str(row), 'Awareness', font_=styleFont)
                             self.xlsxFile.writeCell('B'+str(row+2), 'Consideration', font_=styleFont)
                             self.xlsxFile.fillCell('B'+str(row), PLATFORM_COLORS[platform])
@@ -2339,6 +2379,13 @@ class tagFrontEnd(FrameWork2D):
                         self.xlsxFile.writeCell('F'+str(row), 'AllPages')
                         self.xlsxFile.writeCell('G'+str(row), 'u/p')
                         self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages'+platform.capitalize(),'T%sss'%self.timerLast.get()))
+                cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                self.xlsxFile.sheet.merge_cells('B%d:B%d'%(row,row+1))
+                self.xlsxFile.writeCell('B'+str(row), 'Microconversion', font_=styleFont)
+                self.xlsxFile.fillCell('B'+str(row), PLATFORM_COLORS['microconvertion'])
+                for r in range(2):
+                    for c in COLUMNS:
+                        self.xlsxFile.fillCell(c+str(row+r), PLATFORM_COLORS['microconvertion'])
                 if len(self.webDOM.arraySections)>0: self.loadData(self.webDOM.arraySections)
                 self.xlsxFile.book.remove(self.xlsxFile.book['Sections'])
                 directory = filedialog.askdirectory()
@@ -2358,9 +2405,6 @@ class tagFrontEnd(FrameWork2D):
                 self.lanchPopUps('Error!', str(sys.exc_info()[1]), 'Press "Ok" to exit.')
         else:
             self.lanchPopUps('Fields missing!', 'Check the Container ID and Advertiser Name!', 'Press "Ok" to exit.')
-            
-    def writeBasicPixels(cell, platform=''):
-        row = int(re.findall(r'\d+',cell)[0])
     
     def savePixels(self):
         self.btn_save_pixels.configure(state='disable')
@@ -2466,7 +2510,16 @@ class tagFrontEnd(FrameWork2D):
                     if code != None:
                         code_ = code.replace(varDV, '{{%s}}'%variable_).replace(varMS, '{{%s}}'%variable_) 
                         self.arrayPixels[self.arrayPixels.index(pixel)][index] = code_   
-        
+                        
+    def fitCustomVariables(self, customVariables):
+        typeVariables = sM.subStrings(r':\w+', customVariables)
+        try:
+            for typeVariable in typeVariables:
+                customVariables = customVariables.replace(typeVariable, '')
+            return customVariables
+        except:
+            return customVariables
+                    
     def lanchPopUps(self, title_, message_, detail_):
         messagebox.showinfo(
             title   = title_,
