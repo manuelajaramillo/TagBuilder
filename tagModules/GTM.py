@@ -340,8 +340,11 @@ class GTM:
         # except:
         #     return {}
     
-    def updateVariable(self):
-        pass
+    def updateVariable(self, path, body):
+        try:
+            return self.gtm_service.accounts().containers().workspaces().variables().update(path=path, body=body).execute() 
+        except:
+            return {}
     
     def existAccount(self, name):
         for account in self.accountList:
@@ -411,8 +414,8 @@ class AudienceTag(CustomTemple):
 class ButtonTag(CustomTemple):
     def __init__(self, name, code, selector):
         super().__init__(name, code)
-        self.trigger = ClickTrigger(name, selector['attribute'], selector['value'])
-        
+        self.trigger = ClickTrigger(name, selector['attribute'], selector['value'])   
+            
 class GA4Setting(TagTemple):
     def __init__(self, name, measurementID):
         super().__init__(name)
@@ -425,7 +428,6 @@ class GA4Setting(TagTemple):
         self.setParameter('parameter', 'boolean', 'enableSendToServerContainer', 'false')
         self.setParameter('parameter', 'template', 'measurementId', measurementID)
         
-    
 class GA4Event(TagTemple):
     def __init__(self, name, ga4Setting):
         super().__init__(name)  
@@ -541,8 +543,50 @@ class ClickTrigger(TriggerTemple):
             self.addFilter('filter', 'matchRegex', 'Click Text', conditionValue)
     
 class VariableTemple:
-    def __init__(self):
+    def __init__(self, name):
         self.create = False
+        self.temple  = {'name': name}
+    
+    def setState(self, state=True):
+        self.create = state
+        
+    def setProperty(self, name, value):
+        self.temple[name] = value
+    
+    def setParameter(self, nameParameter, typeParameter, keyParameter, valueParameter):
+        parameter = {'type': typeParameter, 'key': keyParameter, 'value': valueParameter}
+        try:
+            self.temple[nameParameter].append(parameter)
+        except KeyError:
+            self.temple[nameParameter] = [parameter]
+    
+    def addParameter(self, nameParameter, typeParameter, keyParameter, valueParameter):
+        parameter = {'type': typeParameter, 'key': keyParameter, 'value': valueParameter}
+        try:
+            self.temple[nameParameter].append(parameter)
+        except KeyError:
+            self.temple[nameParameter] = [parameter]
+            
+class BasicVariable(VariableTemple):
+    def __init__(self, name, typeVariable, parameters={'querykey':'', 'js':'', 'dlvar':'addToCart'}):
+        super().__init__(name)
+        self.setProperty('type', typeVariable)
+        self._init_parameters(parameters)
+        
+    def _init_parameters(self, parameters):
+        if self.temple['type'] == 'u' and self.temple['name'].casefold() == 'hash':
+            self.setParameter('parameter', 'template', 'component', 'FRAGMENT')
+        elif self.temple['type'] == 'u':
+            self.setParameter('parameter', 'template', 'component', 'QUERY')
+            if parameters['querykey'] != '': self.addParameter('parameter', 'template', 'queryKey', parameters['querykey'])
+        elif self.temple['type'] == 'j':
+            pass
+        elif self.temple['type'] == 'v':
+            self.setParameter('parameter', 'template', 'name', parameters['dlvar'])
+            self.addParameter('parameter', 'integer', 'dataLayerVersion', '2')
+            self.addParameter('parameter', 'boolean', 'setDefaultValue', 'false')
+        else:
+            pass
 
 if __name__ == '__main__':
     gtm = GTM()

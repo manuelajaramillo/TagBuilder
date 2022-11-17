@@ -10,9 +10,9 @@ from urllib.parse import urlparse
 from tkinter import font
 from tkinter.constants import OFF
 
-from tagModules.GTM import AudienceTag, ButtonTag, CustomTemple, GTM, ClickTrigger, PageviewTrigger, ScrollTrigger, TimerTrigger
+from tagModules.GTM import AudienceTag, BasicVariable, ButtonTag, CustomTemple, GA4Event, GA4Setting, GTM, ClickTrigger, PageviewTrigger, ScrollTrigger, TimerTrigger
 from tagModules.urlExtractor import urlDomains as webDOM
-from tagModules.tagBuilderTools import stringMethods as sM
+from tagModules.tagBuilderTools import Naming, stringMethods as sM
 from tagModules.pixelBot import pixelBot
 from tagModules.handleFile import xlsxFile
 from googleapiclient.errors import HttpError
@@ -258,6 +258,7 @@ class tagFrontEnd(FrameWork2D):
         self.taboolaSeg    = []
         self.taboolaConv   = []
         self.gtmTags       = []
+        self.gtmVariables  = []
         self.platformList  = []
         self.platformAdsList   = []
         self.typeContainer = tk.StringVar()
@@ -494,15 +495,18 @@ class tagFrontEnd(FrameWork2D):
                 self.xlsxFile.setSheet('Home')
                 self.btn_loadTags.configure(state='active')
             else:
+                print(tempDir)
                 self.lanchPopUps('Invalid File', 'You must choice a valid file!', 'Press "Ok" to exit.')
         except:
+            print('Queeeeeeeee?')
+            print(sys.exc_info())
             self.lanchPopUps('Invalid File', 'You must choice a valid file!', 'Press "Ok" to exit.')
             
     def disableGTMBTN(self):
         self.btn_loadTags.configure(state='disable')
         self.btn_gtmConnect.configure(state='disable')
         self.btn_tagging.configure(state='disable')
-        self.btn_save_tags.configure(state='disable')
+        #self.btn_save_tags.configure(state='disable')
     
     def setTemple(self):
         self.xlsxFile.setPATH(self.pathTR.get())
@@ -685,8 +689,8 @@ class tagFrontEnd(FrameWork2D):
         self.btn_tagging = ttk.Button(GTM_button_frame, text='Create', command = self.createTags_threaded, state = 'disable')
         self.btn_tagging.grid(column=2, row=0)
         
-        self.btn_save_tags = ttk.Button(GTM_button_frame, text='Save', command = self.saveTags_threaded, state = 'disable')
-        self.btn_save_tags.grid(column=3, row=0)
+        #self.btn_save_tags = ttk.Button(GTM_button_frame, text='Save', command = self.saveTags_threaded, state = 'disable')
+        #self.btn_save_tags.grid(column=3, row=0)
         
         ttk.Button(GTM_button_frame, text='exit', command = self.askQuit).grid(column=4, row=0)
         self.createTableData(2)
@@ -1210,12 +1214,14 @@ class tagFrontEnd(FrameWork2D):
             if len(nameSection)>1:
                 nameSection = nameSection[0]+'-'+nameSection[1]
             else:
-                nameSection = nameSection[0]    
+                nameSection = nameSection[0] 
+            if self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('C24', self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))   
             cell = 'E31'
             for platform in PLATFORMS_ADS:
                 if self.__getattribute__('platform%s'%platform.capitalize()).get():
                     cell, row, column = self.xlsxFile.nextFreeCell(cell)
                     platform = '' if platform == 'programmatic' else platform
+                    if platform == PLATFORMS_ADS[3] and self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('L'+str(row), self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                     self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), nameSection+platform.capitalize()))
             self.xlsxFile.loadList(dataSection, 'F30')
             index_sheet += 1
@@ -1346,6 +1352,12 @@ class tagFrontEnd(FrameWork2D):
     def tags(self):
         """This method implements the extration of the pixels from TR Final.
         """
+        self.xlsxFile.setSheet('Home')
+        self.advertiser.set(self.xlsxFile.readCell('C13') if self.xlsxFile.readCell('C13') != None else '')
+        if not hasattr(self, '%sMeasurementID'%PLATFORMS_ADS[3]):
+            self.__setattr__('%sMeasurementID'%PLATFORMS_ADS[3], self.xlsxFile.readCell('C24') if self.xlsxFile.readCell('C24') != None else '')
+        else:
+            setattr(self, '%sMeasurementID'%PLATFORMS_ADS[3], self.xlsxFile.readCell('C24') if self.xlsxFile.readCell('C24') != None else '')
         self.btn_loadTags.configure(state='disable')
         if self.validTRFile('Final'):
             self.addItemTreeViewII(self.getArrayPixels(), 2)
@@ -1399,9 +1411,16 @@ class tagFrontEnd(FrameWork2D):
         Returns:
             None: None
         """        
-        self.gtmTags = []
-        triggersID   = []
-        otherID      = ''
+        
+        self.gtmVariables = []
+        self.gtmTags      = []
+        folders           = [-1 for i in range(len(PLATFORMS_ADS))]
+        triggersID        = [[] for i in range(len(PLATFORMS_ADS))]
+        otherID           = ['' for i in range(len(PLATFORMS_ADS))]
+        ga4SettingName    = 'WebStreamGA4'
+        ga4Index          = PLATFORMS_ADS.index('ga4')
+        progress          = 0
+        self.tagProgress.set(progress)
         _gtmID = self.get_gtm_id()
         if _gtmID == None or _gtmID != self.container['publicId']:
             return self.lanchPopUps('GTM ID Error!', "Verify the GTM ID in TagBuilder and TR File!", 'Press "Ok" to exit.')
@@ -1409,18 +1428,136 @@ class tagFrontEnd(FrameWork2D):
         self.btn_gtmConnect.configure(state='disable')
         self.btn_tagging.configure(state='disable')
         tags, triggers, variables = [], [], []
-        exist, folder = self.gtmService.existElement(self.workspace['path'], 'Strategy_Nexus_', 'Folder')
-        if exist:
-            folder = self.gtmService.updateFolder(folder['path'])
-        else:
-            folder = self.gtmService.createFolder(self.workspace['path'])
-        self.tagProgress.set(1)
+        #Creation of Folders and Custom Variables
+        variables = self.gtmService.getAllVariables(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
+        for pixel in self.arrayPixels:
+            snippet = ''
+            for code in pixel[6:]:
+                if code != None and code.casefold() not in ['si', 'no', '', 'url', 'event']:
+                    snippet += code
+            if snippet == '': 
+                continue
+            else:
+                for platform in PLATFORMS_ADS:
+                    index = PLATFORMS_ADS.index(platform)
+                    #platform = platform.capitalize() if platform != 'programmatic' else ''
+                    platform = platform.capitalize()
+                    if re.findall(r'%sPV_|%sBtn_|%sScroll\d{1,2}_|%sT\d+ss_'%(platform, platform, platform, platform), pixel[1]):
+                        if folders[index] == -1:
+                            exist, folders[index] = self.gtmService.existElement(self.workspace['path'], 'Strategy_Nexus%s_'%platform, 'Folder')
+                            nameFolder = Naming.createName('Nexus%s'%platform, 'Strategy')
+                            if exist:
+                                print('El folder de esta plataforma existe')
+                                folders[index] = self.gtmService.updateFolder(folders[index]['path'], nameFolder)
+                            else:
+                                print('El folder de esta plataforma no existe')
+                                folders[index] = self.gtmService.createFolder(self.workspace['path'], nameFolder)
+                        else:
+                            pass
+                        pixelVariables = self.fitCustomVariables(pixel[3]).split('/')
+                        for pvar in pixelVariables:
+                            pvarName = pvar
+                            pvar = pvar.casefold()
+                            if pvar not in ['u', 'p', 'r']:
+                                if (not self.existVariable(variables, pvar) and not self.existVariable(self.gtmVariables, pvar)) or (self.existVariable(variables, pvar) and not self.existVariable(self.gtmVariables, pvar)):
+                                    if pvar == 'hash':
+                                        self.gtmVariables.append(BasicVariable(pvarName, 'u'))
+                                        self.gtmVariables[-1].setProperty('parentFolderId', folders[index]['folderId'])
+                                        if not self.existVariable(variables, pvarName): 
+                                            self.gtmVariables[-1].setState()
+                                        else:
+                                            self.gtmVariables[-1].setProperty('variableId', self.getVariableId(variables, pvarName))
+                                    else:
+                                        if [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:query'%pvar, var)]:
+                                            self.gtmVariables.append(BasicVariable(pvarName, 'u', {'querykey': pixel[5]}))
+                                            self.gtmVariables[-1].setProperty('parentFolderId', folders[index]['folderId'])
+                                            if not self.existVariable(variables, pvarName): 
+                                                self.gtmVariables[-1].setState()
+                                            else:
+                                                self.gtmVariables[-1].setProperty('variableId', self.getVariableId(variables, pvarName))
+                                        elif [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:datalayer'%pvar, var)]:
+                                            pass
+                                        elif [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:javascript'%pvar, var)]:
+                                            pass
+                                        elif [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:customjavascript'%pvar, var)]:
+                                            pass
+                                        else:
+                                            pass
+                        break
+                else:
+                    if folders[0] == -1:
+                        exist, folders[0] = self.gtmService.existElement(self.workspace['path'], 'Strategy_Nexus_', 'Folder')
+                        if exist:
+                            folders[0] = self.gtmService.updateFolder(folders[0]['path'])
+                        else:
+                            folders[0] = self.gtmService.createFolder(self.workspace['path'])
+                    else:
+                        pass
+                    pixelVariables = self.fitCustomVariables(pixel[3]).split('/')
+                    for pvar in pixelVariables:
+                        pvarName = pvar
+                        pvar = pvar.casefold()
+                        if pvar not in ['u', 'p', 'r']:
+                            if (not self.existVariable(variables, pvar) and not self.existVariable(self.gtmVariables, pvar)) or (self.existVariable(variables, pvar) and not self.existVariable(self.gtmVariables, pvar)):
+                                if pvar == 'hash':
+                                    self.gtmVariables.append(BasicVariable(pvar, 'u'))
+                                    self.gtmVariables[-1].setProperty('parentFolderId', folders[0]['folderId'])
+                                    if not self.existVariable(variables, pvar): 
+                                        self.gtmVariables[-1].setState()
+                                    else:
+                                        self.gtmVariables[-1].setProperty('variableId', self.getVariableId(variables, pvarName))
+                                else:
+                                    if [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:query'%pvar, var)]:
+                                        self.gtmVariables.append(BasicVariable(pvar, 'u', {'querykey': pixel[5]}))
+                                        self.gtmVariables[-1].setProperty('parentFolderId', folders[0]['folderId'])
+                                        if not self.existVariable(variables, pvar): 
+                                            self.gtmVariables[-1].setState()
+                                        else:
+                                            self.gtmVariables[-1].setProperty('variableId', self.getVariableId(variables, pvarName))
+                                    elif [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:datalayer'%pvar, var)]:
+                                        pass
+                                    elif [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:javascript'%pvar, var)]:
+                                        pass
+                                    elif [True for var in pixel[3].casefold().split('/') if re.findall(r'^%s:customjavascript'%pvar, var)]:
+                                        pass
+                                    else:
+                                        pass
+        self.tagProgress.set(5)
+        for var in self.gtmVariables:
+            if var.create:
+                while True:
+                    try:
+                        self.gtmService.createVariable(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], var.temple)
+                    except HttpError:
+                        print("GTM: Don't hurry me, please. Go us so fast!!!")
+                        time.sleep(60)
+                        self.gtmService.createVariable(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], var.temple)
+                    break   
+            else:
+                while True:
+                    try:
+                        self.gtmService.updateVariable(self.workspace['path']+'/variables/%s'%var.temple['variableId'], var.temple)
+                    except HttpError:
+                        print("GTM: Don't hurry me, please. Go us so fast!!!")
+                        time.sleep(60)
+                        self.gtmService.updateVariable(self.workspace['path']+'/variables/%s'%var.temple['variableId'], var.temple)
+                    break 
+        self.tagProgress.set(10)
         tags = self.gtmService.getAllTags(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
         triggers  = self.gtmService.getAllTriggers(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
-        variables = self.gtmService.getAllVariables(self.container['accountId'], self.container['containerId'], self.workspace['workspaceId'])
-        self.tagProgress.set(2)
+        #Creation of GA4 Setting Tag
+        if folders[ga4Index] != -1:
+            ga4SettingName = Naming.createName('WebStreamGA4', self.advertiser.get())
+            self.gtmTags.append(GA4Setting(ga4SettingName, self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3])))
+            self.gtmTags[-1].setProperty('parentFolderId', folders[ga4Index]['folderId'])
+            if not self.existTag(tags, ga4SettingName):
+                self.gtmTags[-1].setState()
+            else:
+                tagId = self.getTagId(tags, ga4SettingName)
+                if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+        self.tagProgress.set(15)
         self.updateSnipetCodes()
-        self.tagProgress.set(3)
+        self.tagProgress.set(20)
         home = urlparse(self.get_homepage()).hostname if self.get_homepage() != None else 'homepage.com'
         for pixel in self.arrayPixels:
             snippet = ''
@@ -1431,21 +1568,105 @@ class tagFrontEnd(FrameWork2D):
             advertiser, trigger, date = pixel[1].split('_')
             if pixel[0] == 'Home' or pixel[0] == 'Funnel':
                 if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$|%sBtn$|%sScroll\d{1,2}$|%sT\d+ss$'%(p.capitalize(),p.capitalize(), p.capitalize(),p.capitalize()),trigger)]:
-                    pass
+                    if re.findall(r'Ga4PV$|Ga4Btn$|Ga4Scroll\d{1,2}$|Ga4T\d+ss$',trigger):
+                        self.gtmTags.append(GA4Event(pixel[1], ga4SettingName))
+                        self.gtmTags[-1].setProperty('parentFolderId', folders[ga4Index]['folderId'])
+                        if not self.existTag(tags, pixel[1]):
+                            self.gtmTags[-1].setState()
+                        else:
+                            tagId = self.getTagId(tags, pixel[1])
+                            if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
+                        if re.findall(r'Ga4Scroll\d{1,2}$',trigger):
+                            if re.findall(r'^AllPages', trigger):
+                                try:
+                                    depth = re.findall(r'\d{1,2}', re.findall(r'Scroll\d{1,2}', trigger)[0])[0]
+                                except:
+                                    depth = self.scrollDeep.get()
+                                self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], depth))
+                                self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[ga4Index]['folderId'])
+                                if not self.existTrigger(triggers, pixel[1]): 
+                                    self.gtmTags[-1].trigger.setState()
+                                else:
+                                    triggerId = self.getTriggerId(triggers, pixel[1])
+                                    if triggerId != '': 
+                                        self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                        self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                        elif re.findall(r'Ga4T\d+ss$',trigger):
+                            if re.findall(r'^AllPages', trigger):
+                                try:
+                                    time_ = re.findall(r'\d+', re.findall(r'T\d+ss', trigger)[0])[0]
+                                except:
+                                    time_ = self.timerLast.get()
+                                self.gtmTags[-1].setTrigger(TimerTrigger(pixel[1], time_, home))
+                                self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[ga4Index]['folderId'])
+                                if not self.existTrigger(triggers, pixel[1]): 
+                                    self.gtmTags[-1].trigger.setState()
+                                else:
+                                    triggerId = self.getTriggerId(triggers, pixel[1])
+                                    if triggerId != '': 
+                                        self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                        self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                        elif re.findall(r'Ga4Btn$',trigger):
+                            try:
+                                attribute, value = pixel[5].split(':')
+                                attribute, value = attribute.upper(), value.upper()
+                            except:
+                                attribute, value = 'TEXT', 'TBD'
+                            self.gtmTags[-1].setTrigger(ClickTrigger(pixel[1], attribute, value))
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[ga4Index]['folderId'])
+                            if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
+                            if not self.existTrigger(triggers, pixel[1]): 
+                                self.gtmTags[-1].trigger.setState()
+                            else:
+                                triggerId = self.getTriggerId(triggers, pixel[1])
+                                if triggerId != '': 
+                                    self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                    self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                        else:
+                            if re.findall(r'^HomeUTM', trigger):
+                                pass
+                            elif re.findall(r'^Home', trigger):
+                                self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Home'))
+                                self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[ga4Index]['folderId'])
+                                if not self.existTrigger(triggers, pixel[1]): 
+                                    self.gtmTags[-1].trigger.setState()
+                                else:
+                                    triggerId = self.getTriggerId(triggers, pixel[1])
+                                    if triggerId != '': 
+                                        self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                        self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                            elif re.findall(r'AllPages', trigger):
+                                self.gtmTags[-1].setProperty('firingTriggerId', '2147479553')
+                            else:
+                                self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Section'))
+                                self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[ga4Index]['folderId'])
+                                if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
+                                if not self.existTrigger(triggers, pixel[1]): 
+                                    self.gtmTags[-1].trigger.setState()
+                                else:
+                                    triggerId = self.getTriggerId(triggers, pixel[1])
+                                    if triggerId != '': 
+                                        self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
+                                        self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
+                    elif re.findall(r'AdsPV$|AdsBtn$|AdsScroll\d{1,2}$|AdsT\d+ss$',trigger):
+                        pass
+                    elif re.findall(r'MetaPV$|MetaBtn$|MetaScroll\d{1,2}$|MetaT\d+ss$',trigger):
+                        pass
+                    elif re.findall(r'TwitterPV$|TwitterBtn$|TwitterScroll\d{1,2}$|TwitterT\d+ss$',trigger):
+                        pass
+                    elif re.findall(r'Tik-tokPV$|Tik-tokBtn$|Tik-tokScroll\d{1,2}$|Tik-tokT\d+ss$',trigger):
+                        pass
+                    else:
+                        pass
                 else:
-                    print('*'*60)
-                    print('*'*60)
-                    print('Pixel tipo Home or Funnel: ', pixel[1], pixel[0])
-                    print('*'*60)
-                    print('*'*60)
                     if re.findall(r'PV$', trigger):
                         if re.findall(r'^HomeUTM', trigger):
                             pass
                         elif re.findall(r'^Home', trigger):
                             self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId'])
                             self.gtmTags[-1].setTrigger(PageviewTrigger(pixel[1], pixel[4], pageType='Home'))
-                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[0]['folderId'])
                             if not self.existTag(tags, pixel[1]):
                                 self.gtmTags[-1].setState()
                             else:
@@ -1461,7 +1682,7 @@ class tagFrontEnd(FrameWork2D):
                         elif re.findall(r'AllPages', trigger):
                             self.gtmTags.append(CustomTemple(pixel[1], snippet))
                             self.gtmTags[-1].setProperty('firingTriggerId', '2147479553')
-                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId'])
                             if not self.existTag(tags, pixel[1]): 
                                 self.gtmTags[-1].setState()
                             else:
@@ -1469,8 +1690,8 @@ class tagFrontEnd(FrameWork2D):
                                 if tagId != '': self.gtmTags[-1].setProperty('tagId', tagId)
                         else:
                             self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
-                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId'])
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[0]['folderId'])
                             if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
                             if not self.existTag(tags, pixel[1]): 
                                 self.gtmTags[-1].setState()
@@ -1487,10 +1708,13 @@ class tagFrontEnd(FrameWork2D):
                     elif re.findall(r'Scroll\d{1,2}$', trigger):
                         if re.findall(r'^AllPages', trigger):
                             self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                            depth = re.findall(r'\d{1,2}', trigger)[0]
+                            self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId'])
+                            try:
+                                depth = re.findall(r'\d{1,2}', re.findall(r'Scroll\d{1,2}', trigger)[0])[0]
+                            except:
+                                depth = self.scrollDeep.get()
                             self.gtmTags[-1].setTrigger(ScrollTrigger(pixel[1], depth))
-                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[0]['folderId'])
                             if not self.existTag(tags, pixel[1]):
                                 self.gtmTags[-1].setState()
                             else:
@@ -1506,10 +1730,13 @@ class tagFrontEnd(FrameWork2D):
                     elif re.findall(r'T\d+ss$', trigger):
                         if re.findall(r'^AllPages', trigger):
                             self.gtmTags.append(CustomTemple(pixel[1], snippet))
-                            self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                            time_ = re.findall(r'\d+', trigger)[0]
+                            self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId'])
+                            try:
+                                time_ = re.findall(r'\d+', re.findall(r'T\d+ss', trigger)[0])[0]
+                            except:
+                                time_ = self.timerLast.get()
                             self.gtmTags[-1].setTrigger(TimerTrigger(pixel[1], time_, home))
-                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                            self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[0]['folderId'])
                             if not self.existTag(tags, pixel[1]):
                                 self.gtmTags[-1].setState()
                             else:
@@ -1529,8 +1756,8 @@ class tagFrontEnd(FrameWork2D):
                         except:
                             attribute, value = 'TEXT', 'TBD'
                         self.gtmTags.append(ButtonTag(pixel[1], snippet, {'attribute':attribute, 'value':value}))
-                        self.gtmTags[-1].setProperty('parentFolderId', folder['folderId']) 
-                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                        self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId']) 
+                        self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[0]['folderId'])
                         if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
                         if not self.existTag(tags, pixel[1]): 
                             self.gtmTags[-1].setState()
@@ -1550,24 +1777,14 @@ class tagFrontEnd(FrameWork2D):
                 if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(),trigger)]:
                     pass
                 else: 
-                    print('*'*60)
-                    print('*'*60)
-                    print('Pixel tipo Otros: ', pixel[1], pixel[0])
-                    print('*'*60)
-                    print('*'*60)
-                    otherID = self.getTagId(tags, pixel[1]) if self.existTag(tags, pixel[1]) else otherID
+                    otherID[0] = self.getTagId(tags, pixel[1]) if self.existTag(tags, pixel[1]) else otherID[0]
             else:
                 if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(),trigger)]:
                     pass
                 else:
-                    print('*'*60)
-                    print('*'*60)
-                    print('Pixel tipo Audiencia: ', pixel[1], pixel[0])
-                    print('*'*60)
-                    print('*'*60)
                     self.gtmTags.append(AudienceTag(pixel[1], snippet, pixel[4])) 
-                    self.gtmTags[-1].setProperty('parentFolderId', folder['folderId'])
-                    self.gtmTags[-1].trigger.setProperty('parentFolderId', folder['folderId'])
+                    self.gtmTags[-1].setProperty('parentFolderId', folders[0]['folderId'])
+                    self.gtmTags[-1].trigger.setProperty('parentFolderId', folders[0]['folderId'])
                     if self.gtmSharing: self.gtmTags[-1].trigger.addFilter('filter', 'endsWith', 'Page Hostname', home)
                     if not self.existTag(tags, pixel[1]): 
                         self.gtmTags[-1].setState()
@@ -1581,55 +1798,75 @@ class tagFrontEnd(FrameWork2D):
                         if triggerId != '': 
                             self.gtmTags[-1].setProperty('firingTriggerId', [triggerId])
                             self.gtmTags[-1].trigger.setProperty('triggerId', triggerId)
-        self.tagProgress.set(10)
-        deltaTag = 85/(len(self.gtmTags)) if len(self.gtmTags)>0 else 85
+        progress = 25
+        self.tagProgress.set(progress)
+        print('-*'*200)
+        print('El numero de Tags a crear es: ', len(self.gtmTags))
+        deltaTag = 70/(len(self.gtmTags)) if len(self.gtmTags)>0 else 85
         if deltaTag == 85: self.tagProgress.set(10+deltaTag)
+        print('Cada incremento es de: ', deltaTag)
         for tag, index in zip(self.gtmTags,range(len(self.gtmTags))):
-            if 'AllPagesPV' in tag.temple['name']:
+            if 'AllPagesPV' in tag.temple['name'] or 'WebStreamGA4' in tag.temple['name'] or 'AllPagesGa4PV' in tag.temple['name']:
                 pass
             elif tag.trigger.create:
-                try:
-                    trg = self.gtmService.createTrigger(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.trigger.temple)
-                    self.gtmTags[index].setProperty('firingTriggerId', [trg['triggerId']])
-                except HttpError:
-                    print("GTM: Don't hurry me, please. Go us so fast!!!")
-                    time.sleep(30)
-                    trg = self.gtmService.createTrigger(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.trigger.temple)
-                    self.gtmTags[index].setProperty('firingTriggerId', [trg['triggerId']])
+                while True:
+                    try:
+                        trg = self.gtmService.createTrigger(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.trigger.temple)
+                        self.gtmTags[index].setProperty('firingTriggerId', [trg['triggerId']])
+                    except HttpError:
+                        print("GTM: Don't hurry me, please. Go us so fast!!!")
+                        time.sleep(60)
+                        trg = self.gtmService.createTrigger(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.trigger.temple)
+                    break
+                self.gtmTags[index].setProperty('firingTriggerId', [trg['triggerId']])
                 if 'PV_' in tag.temple['name'] and not 'AllPages' in tag.temple['name']:
-                    triggersID.append(trg['triggerId'])
+                    if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(),trigger)]:
+                        pass
+                    else:
+                        triggersID[0].append(trg['triggerId'])
                 print('Trigger Nuevo: ', trg)
             else:
-                try:
-                    self.gtmService.updateTrigger(self.workspace['path']+'/triggers/%s'%tag.trigger.temple['triggerId'], tag.trigger.temple)
-                except HttpError:
-                    print("GTM: Don't hurry me, please. Go us so fast!!!")
-                    time.sleep(30)
-                    self.gtmService.updateTrigger(self.workspace['path']+'/triggers/%s'%tag.trigger.temple['triggerId'], tag.trigger.temple)
+                while True:
+                    try:
+                        self.gtmService.updateTrigger(self.workspace['path']+'/triggers/%s'%tag.trigger.temple['triggerId'], tag.trigger.temple)
+                    except HttpError:
+                        print("GTM: Don't hurry me, please. Go us so fast!!!")
+                        time.sleep(60)
+                        self.gtmService.updateTrigger(self.workspace['path']+'/triggers/%s'%tag.trigger.temple['triggerId'], tag.trigger.temple)
+                    break
                 if 'PV_' in tag.temple['name']:
-                    triggersID.append(tag.trigger.temple['triggerId'])
-            self.tagProgress.set(10+int(deltaTag*(index+1)/2))
+                    if [True for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(),trigger)]:
+                        pass
+                    else:
+                        triggersID[0].append(tag.trigger.temple['triggerId'])
             if tag.create:
                 print('Tag Nuevo: ', tag.temple)
-                try:
-                    self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.temple)
-                except HttpError:
-                    print("GTM: Don't hurry me, please. Go us so fast!!!")
-                    time.sleep(30)
-                    self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.temple)
+                while True:
+                    try:
+                        self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.temple)
+                    except HttpError:
+                        print("GTM: Don't hurry me, please. Go us so fast!!!")
+                        time.sleep(60)
+                        self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], tag.temple)
+                    break
             else:
                 print('Tag Existente: ', tag.temple)
-                 
-                try:
-                    self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%tag.temple['tagId'], tag.temple)
-                except HttpError:
-                    print("GTM: Don't hurry me, please. Go us so fast!!!")
-                    time.sleep(30)
-                    self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%tag.temple['tagId'], tag.temple)
-            self.tagProgress.set(10+int(deltaTag*index))
+                while True:
+                    try:
+                        self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%tag.temple['tagId'], tag.temple)
+                    except HttpError:
+                        print("GTM: Don't hurry me, please. Go us so fast!!!")
+                        time.sleep(60)
+                        self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%tag.temple['tagId'], tag.temple)
+                    break
+            progress += deltaTag
+            print('El avance es: ', progress)
+            #self.tagProgress.set(10+int(deltaTag*index))
+            self.tagProgress.set(progress)
             time.sleep(10)
-        if len(triggersID)>0:
-            print('We need a Other Pixel')
+        if [True for tID in triggersID if tID]:
+            #if len(triggersID[0])>0:
+            index = index[0] if index else 0
             for pixel in self.arrayPixels:
                 if pixel[0] == 'Otros':
                     snippet = ''
@@ -1637,24 +1874,31 @@ class tagFrontEnd(FrameWork2D):
                         if code != None and code.casefold() not in ['si', 'no', '', 'url', 'event']:
                             snippet += code
                     if snippet == '': break
+                    advertiser, trigger, date = pixel[1].split('_')
+                    index = [PLATFORMS_ADS.index(p) for p in PLATFORMS_ADS if re.findall(r'%sPV$'%p.capitalize(), trigger)]
+                    index = index[0] if index else 0
                     temple = {'name': pixel[1], 'type': 'html', 'parameter': [{'type': 'template', 'key': 'html', 'value': snippet}]}
                     temple['firingTriggerId']   = ['2147479553']
-                    temple['blockingTriggerId'] = triggersID
-                    temple['parentFolderId']    = folder['folderId']
+                    temple['blockingTriggerId'] = triggersID[index]
+                    temple['parentFolderId']    = folders[0]['folderId']
                     if self.existTag(tags, pixel[1]):
-                        try:
-                            self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%otherID, temple)
-                        except HttpError:
-                            print("GTM: Don't hurry me, please. Go us so fast!!!")
-                            time.sleep(30)
-                            self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%otherID, temple)
+                        while True:
+                            try:
+                                self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%otherID[index], temple)
+                            except HttpError:
+                                print("GTM: Don't hurry me, please. Go us so fast!!!")
+                                time.sleep(60)
+                                self.gtmService.updateTag(self.workspace['path']+'/tags/%s'%otherID[index], temple)
+                            break
                     else:
-                        try:
-                            self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], temple)
-                        except HttpError:
-                            print("GTM: Don't hurry me, please. Go us so fast!!!")
-                            time.sleep(30)
-                            self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], temple)
+                        while True:
+                            try:
+                                self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], temple)
+                            except HttpError:
+                                print("GTM: Don't hurry me, please. Go us so fast!!!")
+                                time.sleep(60)
+                                self.gtmService.createTag(self.workspace['accountId'], self.workspace['containerId'], self.workspace['workspaceId'], temple)
+                            break
         self.lanchPopUps('Tagging', 'The Measurement Strategy\n had been implemented!', 'Press "Ok" to exit.')
         self.tagProgress.set(100)    
         self.btn_loadTags.configure(state='active')
@@ -1667,8 +1911,7 @@ class tagFrontEnd(FrameWork2D):
             if tag['name'] == tagName: 
                 return True
             else:
-                    if tagName.replace(date, '') in tag['name']:
-                        return True
+                if tagName.replace(date, '') in tag['name']: return True
         else:
             return False
         
@@ -1683,6 +1926,22 @@ class tagFrontEnd(FrameWork2D):
         else:
             return False
         
+    def existVariable(self, variables, variableName):
+        print('Variables: ', variables)
+        print('Variable Name: ', variableName)
+        try:
+            for variable in variables:
+                if variable['name'] == variableName: 
+                    return True
+            else:
+                return False
+        except:
+            for variable in variables:
+                if variable.temple['name'] == variableName: 
+                    return True
+            else:
+                return False
+        
     def getDateFromName(self, name):
         try:
             date = re.findall(r'_Jan\d{4}|_Feb\d{4}|_Mar\d{4}|_Apr\d{4}|_May\d{4}|_\d{4}|_Jun\d{4}|_Jul\d{4}|_Aug\d{4}|_Sep\d{4}|_Oct\d{4}|_Nov\d{4}|_Dec\d{4}', name)[0]
@@ -1690,6 +1949,18 @@ class tagFrontEnd(FrameWork2D):
             date = ''
         return date
               
+        
+    def getTagId(self, tags, tagName):
+        date = self.getDateFromName(tagName)
+        for tag in tags:
+            if tag['name'] == tagName: 
+                return tag['tagId']
+            else:
+                    if tagName.replace(date, '') in tag['name']:
+                        return tag['tagId']
+        else:
+            return ''
+        
     def getTriggerId(self, triggers, triggerName):
         date = self.getDateFromName(triggerName)
         for trigger in triggers:
@@ -1701,14 +1972,10 @@ class tagFrontEnd(FrameWork2D):
         else:
             return ''
         
-    def getTagId(self, tags, tagName):
-        date = self.getDateFromName(tagName)
-        for tag in tags:
-            if tag['name'] == tagName: 
-                return tag['tagId']
-            else:
-                    if tagName.replace(date, '') in tag['name']:
-                        return tag['tagId']
+    def getVariableId(self, pixelVars, varName):
+        for pvar in pixelVars:
+            if pvar['name'] == varName:
+                return pvar['variableId']
         else:
             return ''
           
@@ -1727,6 +1994,26 @@ class tagFrontEnd(FrameWork2D):
         
     def set_programmatic(self, platform):
         optionPlatform = ''
+        if platform == 3 and self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get():
+            measurementID = ''
+            while True:
+                measurementID = self.windowRequestData('GA4 Measurement ID', 'Please enter the GA4 ID: ')
+                try:
+                    validMeasurementID = False if not re.findall(r'^G-\w{10}$', measurementID) else True
+                except:
+                    validMeasurementID = False
+                if measurementID != None and measurementID != '' and validMeasurementID:
+                    if not hasattr(self, '%sMeasurementID'%PLATFORMS_ADS[3]):
+                        self.__setattr__('%sMeasurementID'%PLATFORMS_ADS[3], measurementID)
+                        print(self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
+                    else:
+                        setattr(self, '%sMeasurementID'%PLATFORMS_ADS[3], measurementID)
+                        #self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]) = measurementID
+                        print(self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
+                    return 0
+                elif measurementID == None:
+                    self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).set(False)
+                    return -1       
         for platform_ in PLATFORMS_ADS:
             if self.__getattribute__('platform%s'%platform_.capitalize()).get(): optionPlatform += platform_.capitalize()+'/'
         if optionPlatform == '':
@@ -1749,6 +2036,7 @@ class tagFrontEnd(FrameWork2D):
         self.platforms['values'] = self.platformList
         self.listPlatformAds.set(optionPlatform)
         self.platforms.set(self.platformList[0])
+        return 0
     
     def set_maxCategories(self, event=None):
         self.maxCategory.set(self.maxCategory.get())
@@ -1931,10 +2219,10 @@ class tagFrontEnd(FrameWork2D):
                             return self.lanchPopUps('Access', "You don't have access to this market", 'Press "Ok" to exit.') 
                         self.pixelProgress.set(5)
                         if self.pixelBot.existAdvertiserId(self.platforms.get(), self.advertiserId.get()):
-                            progress = 0
-                            self.pixelProgress.set(7)
+                            progress = 7
+                            self.pixelProgress.set(progress)
                             self.xandrSeg, self.xandrConv = ([], self.xandrConv) if pixelType=='RTG' else (self.xandrSeg, [])
-                            step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
+                            step = (90/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                             for pixel in self.arrayPixels:
                                 if pixelType == 'RTG' and (pixel[7]==None or pixel[7]=='' or pixel[7]=='NO'):
                                     self.xandrSeg.append('NO')
@@ -1951,10 +2239,8 @@ class tagFrontEnd(FrameWork2D):
                                         #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
                                 self.pixelProgress.set(progress)
-                            print('The snippet are: ')
-                            print(self.xandrSeg)
-                            print(self.xandrConv)
                             self.lanchPopUps('Finished', 'Process of create Pixels have already finished.', 'Press "Ok" to exit.')
+                            self.pixelProgress.set(100)
                         else:
                             self.pixelProgress.set(0)
                             self.btn_create.configure(state='active')
@@ -1968,9 +2254,9 @@ class tagFrontEnd(FrameWork2D):
                         self.pixelProgress.set(2)
                         if self.pixelBot.existAdvertiserId(self.platforms.get(), self.advertiserId.get()):
                             self.DV360 = []
-                            progress = 0
-                            self.pixelProgress.set(5)
-                            step = (5+85/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
+                            progress = 5
+                            self.pixelProgress.set(progress)
+                            step = (90/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                             for pixel in self.arrayPixels:
                                 if pixel[9] in [None,'','No','NO','no', 'nO']:
                                     self.DV360.append('NO')
@@ -1989,10 +2275,8 @@ class tagFrontEnd(FrameWork2D):
                                         #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
                                 self.pixelProgress.set(progress)
-                            print('The snippet are: ')
-                            for pixel in self.DV360:
-                                print(pixel)
                             self.lanchPopUps('Finished', 'Process of create Pixels have already finished.', 'Press "Ok" to exit.')
+                            self.pixelProgress.set(100)
                         else:
                             self.pixelProgress.set(0)
                             self.lanchPopUps('Not founded!', "The advertiser can't founded!", 'Press "Ok" to exit.')
@@ -2006,9 +2290,9 @@ class tagFrontEnd(FrameWork2D):
                         if self.pixelBot.existAdvertiserId(self.platforms.get(), self.advertiserId.get()):
                             self.pixelProgress.set(5)
                             if self.pixelBot.existTaboolaPixel(self.advertiserId.get()):
-                                progress = 0
-                                self.pixelProgress.set(7)
-                                step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
+                                progress = 7
+                                self.pixelProgress.set(progress)
+                                step = (90/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                                 self.taboolaSeg, self.taboolaConv = ([], self.taboolaConv) if pixelType=='RTG' else (self.taboolaSeg, [])
                                 for pixel in self.arrayPixels:
                                     pixel[10] = 'NO' if pixel[10] == None else pixel[10]
@@ -2028,10 +2312,8 @@ class tagFrontEnd(FrameWork2D):
                                         self.taboolaSeg.append(snippet) if pixelType=='RTG' else self.taboolaConv.append(snippet)
                                     progress += step
                                     self.pixelProgress.set(progress)
-                                print('The snippet are: ')
-                                print(self.taboolaSeg)
-                                print(self.taboolaConv)
                                 self.lanchPopUps('Finished', 'Process of create Pixels have already finished.', 'Press "Ok" to exit.')
+                                self.pixelProgress.set(100)
                             else:
                                 self.lanchPopUps('Universal Pixel!', "The Taboola Universal Pixel hasn't implemented yet!", 'Press "Ok" to exit.')
                                 self.pixelProgress.set(0)
@@ -2049,12 +2331,12 @@ class tagFrontEnd(FrameWork2D):
                         self.pixelProgress.set(2)
                         minsightId = self.pixelBot.existMinsightsId(self.advertiser_.get(), self.countries.get(), self.agencies.get())
                         if minsightId != -1:
-                            progress = 0
+                            progress = 7
                             self.pixelProgress.set(5)
-                            step = (7+83/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
+                            step = (90/len(self.arrayPixels)) if len(self.arrayPixels)>0 else 90
                             self.advertiserId.set(minsightId)
                             self.minsights = []
-                            self.pixelProgress.set(7)
+                            self.pixelProgress.set(progress)
                             for pixel in self.arrayPixels:
                                 if pixel[6] in [None,'','No','NO','no', 'nO', '']:
                                     self.minsights.append('NO')
@@ -2075,10 +2357,8 @@ class tagFrontEnd(FrameWork2D):
                                         #self.lanchPopUps('Pixel Exists!', 'The pixel, %s, exists.'%pixel[1], 'Press "Ok" to exit.')
                                 progress += step
                                 self.pixelProgress.set(progress)
-                            print('The snippet are: ')
-                            for pixel in self.minsights:
-                                print(pixel)
                             self.lanchPopUps('Finished', 'Process of create Pixels have already finished.', 'Press "Ok" to exit.')
+                            self.pixelProgress.set(100)
                         else:
                             self.lanchPopUps('Not founded!', "The advertiser can't founded!", 'Press "Ok" to exit.')
                             self.pixelProgress.set(0)
@@ -2217,6 +2497,13 @@ class tagFrontEnd(FrameWork2D):
         alertWin.withdraw()
         self.pixelBot.code = simpledialog.askstring('Verification','What is the code?',parent=alertWin)
         alertWin.destroy()
+        
+    def windowRequestData(self, title, message):
+        alertWin = tk.Tk()
+        alertWin.withdraw()
+        data = simpledialog.askstring(title, message,parent=alertWin)
+        alertWin.destroy()
+        return data
     
     def validsSections(self, mainSections, arraySections):
         sections = []
@@ -2342,6 +2629,7 @@ class tagFrontEnd(FrameWork2D):
                 self.xlsxFile.setSheet('Home')
                 cell = 'E31'
                 styleFont = {'name':'Calibri', 'size':11, 'bold':True, 'italic':True, 'color':'FF000000'}
+                if self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('C24', self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                 for platform in PLATFORMS_ADS:
                     if self.__getattribute__('platform%s'%platform.capitalize()).get():
                         platform = '' if platform == 'programmatic' else platform
@@ -2356,24 +2644,28 @@ class tagFrontEnd(FrameWork2D):
                             for r in range(4):
                                 for c in COLUMNS:
                                     self.xlsxFile.fillCell(c+str(row+r), PLATFORM_COLORS[platform])
+                        if platform == PLATFORMS_ADS[3] and self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('L'+str(row), self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                         self.xlsxFile.writeCell('C'+str(row), 'Home')
                         self.xlsxFile.writeCell('G'+str(row), 'u')
                         self.xlsxFile.writeCell('D'+str(row), 'Page View')
                         self.xlsxFile.writeCell('F'+str(row), self.urlAdvertiser.get())
                         self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'Home'+platform.capitalize()))
                         cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        if platform == PLATFORMS_ADS[3] and self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('L'+str(row), self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                         self.xlsxFile.writeCell('C'+str(row), 'Section')
                         self.xlsxFile.writeCell('D'+str(row), 'Page View')
                         self.xlsxFile.writeCell('F'+str(row), 'AllPages')
                         self.xlsxFile.writeCell('G'+str(row), 'u/p')
                         self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages'+platform.capitalize(),'PV'))
                         cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        if platform == PLATFORMS_ADS[3] and self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('L'+str(row), self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                         self.xlsxFile.writeCell('C'+str(row), 'Section')
                         self.xlsxFile.writeCell('D'+str(row), 'Scroll')
                         self.xlsxFile.writeCell('F'+str(row), 'AllPages')
                         self.xlsxFile.writeCell('G'+str(row), 'u/p')
                         self.xlsxFile.writeCell('E'+str(row), self.xlsxFile.getNameSection(self.advertiser.get(), 'AllPages'+platform.capitalize(),'Scroll%s'%self.scrollDeep.get()))
                         cell, row, column = self.xlsxFile.nextFreeCell(cell)
+                        if platform == PLATFORMS_ADS[3] and self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('L'+str(row), self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                         self.xlsxFile.writeCell('C'+str(row), 'Section')
                         self.xlsxFile.writeCell('D'+str(row), 'Timer')
                         self.xlsxFile.writeCell('F'+str(row), 'AllPages')
@@ -2427,9 +2719,11 @@ class tagFrontEnd(FrameWork2D):
             print('El numero de pixeles en sheet Funnel es: ', pixelsFunnel-pixelsHome)
             
             for DSP in snippet_Arrays:
-                index, indexSection = 0, 4
-                print('Pixel Setting: ',snippet_Arrays[DSP])    
+                index, indexSection, cellCol = 0, 4, 30
+                #print('Pixel Setting: ',snippet_Arrays[DSP])    
                 for snippet in snippet_Arrays[DSP]:
+                    print('+-'*60)
+                    print('El código del pixel %d es: '%index, snippet)
                     if index<pixelsHome or index<pixelsFunnel:
                         if index<pixelsHome: 
                             self.xlsxFile.setSheet('Home')
@@ -2438,22 +2732,23 @@ class tagFrontEnd(FrameWork2D):
                             self.xlsxFile.setSheet('Funnel')
                             index_ = index-pixelsHome 
                         if DSP == 'Xandr Seg': 
-                            cell = 'J3%s'%str(index_+1)
+                            cell = 'J%s'%str(cellCol+index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'Xandr Conv': 
-                            cell = 'K3%s'%str(index_+1)
+                            cell = 'K%s'%str(cellCol+index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'DV360': 
-                            cell = 'L3%s'%str(index_+1)
+                            cell = 'L%s'%str(cellCol+index_+1)
+                            print('La celda donde se imprimirá es: ', cell)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'Minsights': 
-                            cell = 'I3%s'%str(index_+1)
+                            cell = 'I%s'%str(cellCol+index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         elif DSP == 'Taboola Seg': 
-                            cell = 'M3%s'%str(index_+1)
+                            cell = 'M%s'%str(cellCol+index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                         else: 
-                            cell = 'N3%s'%str(index_+1)
+                            cell = 'N%s'%str(cellCol+index_+1)
                             self.xlsxFile.writeCell(cell, snippet)
                     else:
                         self.xlsxFile.setSheet(self.xlsxFile.book.sheetnames[indexSection])
@@ -2498,11 +2793,13 @@ class tagFrontEnd(FrameWork2D):
     
     def updateSnipetCodes(self):
         for pixel in self.arrayPixels:
-            variables = pixel[3].split('/')
+            fitVariables = self.fitCustomVariables(pixel[3])
+            variables = fitVariables.split('/')
             for variable in variables:
                 variable_ = ''
                 if variable == 'u': variable_ = 'Page URL'
                 elif variable == 'p': variable_ = 'Page Path'
+                elif variable == 'r': variable_ = 'Referrer'
                 else: variable_ = variable
                 varDV = '[%s]'%variable
                 varMS = '[REPLACE THIS WITH YOUR MACRO AND PASS IN %s]'%variable
