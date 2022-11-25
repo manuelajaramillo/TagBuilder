@@ -405,10 +405,12 @@ class CustomTemple(TagTemple):
     def _init_parameters(self, codeJS):
         self.setProperty('type', 'html')
         self.setParameter('parameter', 'template', 'html', codeJS)
+        if 'PV_' in self.temple['name']: self.setProperty('tagFiringOption', 'oncePerLoad')
         
 class AudienceTag(CustomTemple):
     def __init__(self, name, code, pathAudience):
         super().__init__(name, code)
+        self.setProperty('tagFiringOption', 'oncePerLoad')
         self.trigger = PageviewTrigger(name, pathAudience, pageType='Section')
         
 class ButtonTag(CustomTemple):
@@ -441,6 +443,7 @@ class GA4Event(TagTemple):
         self.setProperty('type', 'gaawe')
         self.setParameter('parameter', 'template', 'eventName', eventName)
         self.setParameter('parameter', 'tagReference', 'measurementId', ga4Setting)
+        if 'Ga4PV_' in self.temple['name']: self.setProperty('tagFiringOption', 'oncePerLoad')
 class facebookTemple(TagTemple):
     def __init__(self, name):
         super().__init__(name)

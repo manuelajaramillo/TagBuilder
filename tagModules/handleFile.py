@@ -260,7 +260,10 @@ class xlsxFile:
         """        
         advertiser  = self.readCell(cell)
         month, year = self.getDate()
-        return 'TagReq'+custom_text+'_'+advertiser+'_'+month+year+'.xlsx'
+        if advertiser != None:
+            return 'TagReq'+custom_text+'_'+advertiser+'_'+month+year+'.xlsx'
+        else:
+            return 'TagReq'+custom_text+'_'+'advertiserNameNoFound'+'_'+month+year+'.xlsx'
 
     def getNameSection(self, advertiserName, sectionName, typeTrigger='PV'):
         """This method create and return the standar name of a pixel to create in TagBuilder.
