@@ -3,6 +3,7 @@ This module integrate some functionalities from Openpyxl in xlsx class
 that allow us to manipulate and handle .xlsx format files as TR file that 
 is used in GroupM Nexus in the process of implement a measument strategy.
 """
+import openpyxl
 from openpyxl import Workbook,load_workbook
 from openpyxl.styles import Alignment
 from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
@@ -27,6 +28,8 @@ PATH_      = 'resources/formats/TaggingRequest_2021.xlsx'
 FONT = {
     'name':'Calibri', 'size':11, 'bold':False, 'italic':False, 'color':'FF000000'
     }
+
+LOGO_LOC = 'resources/Nexus_Logo.png'
 
 class xlsxFile:
     def __init__(self, sheet = 'Tagging Request', PATH=PATH_):
@@ -107,6 +110,10 @@ class xlsxFile:
         """        
         self.setSheet(nameSheetFrom)
         self.book.copy_worksheet(self.sheet).title = nameSheetTo
+        
+    def insertImage(self, sheetName, cell):
+        self.setSheet(sheetName)
+        self.sheet.add_image(openpyxl.drawing.image.Image(LOGO_LOC), cell)
         
     def setSectionSheets(self, nameSheetFrom, sectionList):
         """This methods create a new sheets from a sheet given.

@@ -1184,7 +1184,6 @@ class tagFrontEnd(FrameWork2D):
         
     def createSectionSheets(self, mainSections):
         self.xlsxFile.setSheet('Sections')
-        self.xlsxFile.writeCell('C13', self.advertiser.get(), ['left','center'])
         cell = 'C31'
         for platform in PLATFORMS_ADS:
             if self.__getattribute__('platform%s'%platform.capitalize()).get():
@@ -1193,9 +1192,9 @@ class tagFrontEnd(FrameWork2D):
                 self.xlsxFile.writeCell('D'+str(row), 'Page View')
                 self.xlsxFile.writeCell('G'+str(row), 'u/p')
         for mainSection in mainSections:
-            #mainSection_ = mainSection.replace('/','-')
             mainSection_ = self.fitNameSection(mainSection)
             self.xlsxFile.duplicateSheet('Sections', mainSection_)
+            self.xlsxFile.insertImage(mainSection_, 'B3')
         self.xlsxFile.setSheet('Tagging Request')
         self.xlsxFile.sheet = self.xlsxFile.book['Tagging Request']
         self.xlsxFile.sheet.title = 'Home'
@@ -1215,7 +1214,7 @@ class tagFrontEnd(FrameWork2D):
                 nameSection = nameSection[0]+'-'+nameSection[1]
             else:
                 nameSection = nameSection[0] 
-            if self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('C24', self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))   
+            #if self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('C24', self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))   
             cell = 'E31'
             for platform in PLATFORMS_ADS:
                 if self.__getattribute__('platform%s'%platform.capitalize()).get():
@@ -2676,11 +2675,13 @@ class tagFrontEnd(FrameWork2D):
                 self.btn_save.configure(state='disable')
                 self.xlsxFile.setPATH(self.pathTR.get())
                 self.xlsxFile.setBook()
-                self.xlsxFile.setSheet()
-                self.xlsxFile.writeCell('C13', self.advertiser.get(), ['left','center'])
-                self.xlsxFile.writeCell('C23', self.GTM_ID.get(), ['left','center'])
                 deployGTM = 'No' if 'GTM-XXXXXXX' in self.GTM_ID.get() else 'Si'
-                self.xlsxFile.writeCell('C21', deployGTM, ['left','center'])
+                for sheet in ['Tagging Request', 'Funnel', 'Sections']:
+                    self.xlsxFile.setSheet(sheet)
+                    self.xlsxFile.writeCell('C13', self.advertiser.get(), ['left','center'])
+                    self.xlsxFile.writeCell('C23', self.GTM_ID.get(), ['left','center'])
+                    self.xlsxFile.writeCell('C21', deployGTM, ['left','center'])
+                    if self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('C24', self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]), ['left','center'])
                 if len(self.webDOM.mainSections)>1: 
                     self.createSectionSheets(self.webDOM.mainSections[1:])
                 else:
@@ -2690,7 +2691,6 @@ class tagFrontEnd(FrameWork2D):
                 self.xlsxFile.setSheet('Home')
                 cell = 'E31'
                 styleFont = {'name':'Calibri', 'size':11, 'bold':True, 'italic':True, 'color':'FF000000'}
-                if self.__getattribute__('platform%s'%PLATFORMS_ADS[3].capitalize()).get(): self.xlsxFile.writeCell('C24', self.__getattribute__('%sMeasurementID'%PLATFORMS_ADS[3]))
                 for platform in PLATFORMS_ADS:
                     if self.__getattribute__('platform%s'%platform.capitalize()).get():
                         platform = '' if platform == 'programmatic' else platform
