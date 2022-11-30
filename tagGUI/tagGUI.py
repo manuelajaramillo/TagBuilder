@@ -2181,7 +2181,7 @@ class tagFrontEnd(FrameWork2D):
             if self.builtBy.get() != 'path': return self.lanchPopUps('Building!', "This Building Sitemap way hasn't implemented yet!", 'Press "Ok" to exit.')
             self.btn_sections.configure(state='disable')
             self.btn_save.configure(state='disable')
-            if self.mss.get():
+            if self.mss.get(): #Manual Site Scan
                 self.marionette.set(True)
                 self.showMarionette()
                 self.webDOM.resetDriver(self.urlAdvertiser.get(), True)
@@ -2195,13 +2195,10 @@ class tagFrontEnd(FrameWork2D):
             self.updateProgress_threaded()
             self.webDOM.setStop(False)
             self.btn_find.configure(state='disable')
-            #self.maxCategories.configure(state='disable')
             self.btn_stop.configure(state='active')
             self.deleteItemsTreeView()
-            #existContainer, containerID = self.pixelBot.existGTM(self.urlAdvertiser.get())
             existContainer, containerID = self.webDOM.existGTM(self.urlAdvertiser.get())
             self.GTM_ID.set(containerID)
-            #agregar argumento para el path fijo a tener en cuenta
             fixedPath = self.fixedPath.get() if int(self.fixedPaths.get())>0 else None
             exists_url, exists_sitemap = self.webDOM.buildSiteMap(self.urlAdvertiser.get(), fixedPath)
             if exists_url:
@@ -2223,7 +2220,6 @@ class tagFrontEnd(FrameWork2D):
             self.btn_find.configure(state='active')
             self.btn_sections.configure(state='active')
             self.webDOM.viewProgress = -1
-            #self.maxCategories.configure(state='active')
         else:
             self.lanchPopUps('URL Error!', "The URL given is incorrect!", 'Press "Ok" to exit.')
         
@@ -2253,12 +2249,12 @@ class tagFrontEnd(FrameWork2D):
                 self.webDOM.arraySections = [['/']]
                 self.addItemTreeView(self.webDOM.arraySections)
                 self.lanchPopUps('Not enough!', "There aren't enough landings!", 'Press "Ok" to exit.')
+            self.btn_save.configure(state='active')
         else:
             self.lanchPopUps('Field Required!', 'The Advertiser Name is not valid!', 'Press "Ok" to exit.')
         self.btn_find.configure(state='active')
         self.btn_stop.configure(state='active')
         self.btn_sections.configure(state='active')
-        self.btn_save.configure(state='active')
             
     def createPixels(self):
         try:
